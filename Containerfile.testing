@@ -105,6 +105,10 @@ RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
     zsh git \
     btop fastfetch plocate bat eza fd-find fzf ripgrep zoxide dos2unix smem scrub
 
+# Custom Fetch Logo
+COPY files/etc/fastfetch/config.jsonc /etc/fastfetch/config.jsonc
+COPY files/usr/share/zen-bootc/branding/zenc.txt /usr/share/zen-bootc/branding/zenc.txt
+
 # Enable Services 
 RUN systemctl enable NetworkManager.service plasmalogin.service docker.service earlyoom.service crond.service -f
 
