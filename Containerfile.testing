@@ -13,7 +13,7 @@ LABEL org.opencontainers.image.title="zen-bootc" \
 
 # dnf plugins, rpmfusion & copr repos
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
-    dnf -y install dnf5-plugins-core dnf5-plugins
+    dnf -y install dnf-plugins-core dnf5-plugins
 
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
     dnf install -y "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$FEDORA_VER.noarch.rpm" \
