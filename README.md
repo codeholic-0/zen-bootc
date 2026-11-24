@@ -56,19 +56,23 @@ zen-ctl upgrade          # stage an update (manual only)
 zen-ctl upgrade --apply
 zen-ctl switch           # browse stable|testing|dev tags, probe target, confirm → bootc switch
 zen-ctl switch --list   # read-only listing, no elevation
+zen-ctl zen-dev          # install/refresh user-local zen-dev (no sudo)
 ```
 
-Sudo is prompted automatically. Detection is cron-automated; applying is
-always manual.
+Sudo is prompted for system commands except `zen-ctl zen-dev` and `switch --list`;
+detection is cron-automated; applying is manual.
 
 ## zen-dev (user-local tooling)
 
 `zen-dev` installs optional dev tooling into `$HOME` via each tool's official
 upstream installer — never baked into the image, never touches `/usr`.
-Fresh ISO installs ship it to `~/.local/bin` automatically; on any other
-machine (incl. after `zen-ctl switch` between flavors):
+Fresh ISO installs ship it to `~/.local/bin` automatically; elsewhere run
+`zen-ctl zen-dev` (no sudo; refuses sudo/root, writes only to `$HOME`).
+Fallback one-liner:
 
 ```bash
+zen-ctl zen-dev
+# fallback:
 curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev-install.sh | bash
 ```
 
@@ -94,7 +98,7 @@ Containerfile{,.testing,.minimal,.dev} image specs (promote: copy testing->Conta
 policy.json                          signed-ref policy shipped into the image
 registries.d/                        registries.d snippet shipped into the image
 disk_config/iso-kde.toml             bootc-image-builder config for the ISO
-files/                               shipped files (usr/bin/zen-ctl, cron, drop-ins; home/.local/bin/zen-dev = user-local tool)
+files/                               shipped files (usr/bin/zen-ctl = system CLI + zen-dev bootstrap, cron, drop-ins; home/.local/bin/zen-dev = user-local tool)
 docs/iso.md                          ISO build + SourceForge guide
 plymouth.toml                        boot kernel args
 legacy/nix/                          dormant Nix-era leftovers; image has NO Nix

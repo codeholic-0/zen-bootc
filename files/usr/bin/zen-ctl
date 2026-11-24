@@ -1,5 +1,5 @@
 #!/bin/bash
-# zen-ctl — upgrade check/status/apply for zen-bootc.
+# zen-ctl — upgrade check/status/apply/switch for zen-bootc; zen-dev bootstrap.
 # Contract (verified 2026-11-10 on bootc-vm): no-update=empty+rc0;
 # available=prose+rc0; unsigned ref=error+rc1. State: /var/lib/zen-ctl/last-check.
 # Update size (bootc's "Total/Added/Removed layers ... Size:") is shown now.
@@ -8,9 +8,11 @@ set -u
 STATE_DIR=/var/lib/zen-ctl
 REPO=ghcr.io/codeholic-0/zen-bootc
 SELF=$(readlink -f "$0")
+ZEN_DEV_RAW=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev
 dig() { jq -r "$1" 2>/dev/null; }
 
 # Self-elevate once: bare `zen-ctl …` prompts for sudo, root/cron pass through.
+# Never called by cmd_zen_dev — that subcommand is strictly user-local.
 for_sub() {
     [ "$(id -u)" -eq 0 ] || exec sudo -- "$SELF" "$@"
 }
@@ -155,19 +157,75 @@ cmd_switch() {
         && { logger -t zen-ctl "switch: -> $tag"; echo "zen-ctl: staged $tag — reboot to enter it"; }
 }
 
+# --- zen-dev: user-local bootstrap; never elevates, never writes to /usr ---
+# Trust class matches `zen-dev update`: raw main over TLS, syntax/header
+# checked, deliberately unsigned. The tool lives in $HOME and self-updates.
+cmd_zen_dev() {
+    [ "$#" -eq 0 ] || { echo "usage: zen-ctl zen-dev" >&2; return 2; }
+    if [ "$(id -u)" -eq 0 ] || [ -n "${SUDO_USER:-}" ]; then
+        echo "zen-ctl: zen-dev installs into the invoking user's HOME; run 'zen-ctl zen-dev' without sudo/root" >&2
+        return 2
+    fi
+    command -v curl >/dev/null 2>&1 || { echo "zen-ctl: curl is required for zen-dev bootstrap" >&2; return 1; }
+
+    local target tmp
+    target="$HOME/.local/bin/zen-dev"
+    mkdir -p "$(dirname "$target")" || { echo "zen-ctl: cannot create $(dirname "$target")" >&2; return 1; }
+
+    tmp=$(mktemp "$(dirname "$target")/.zen-dev.XXXXXX") || {
+        echo "zen-ctl: mktemp failed" >&2
+        return 1
+    }
+
+    if ! curl --proto '=https' --proto-redir '=https' -fsSL "$ZEN_DEV_RAW" -o "$tmp"; then
+        rm -f "$tmp"
+        echo "zen-ctl: zen-dev fetch failed" >&2
+        return 1
+    fi
+    if ! bash -n "$tmp" 2>/dev/null || ! grep -q '^# zen-dev' "$tmp"; then
+        rm -f "$tmp"
+        echo "zen-ctl: fetched zen-dev failed sanity checks — nothing installed" >&2
+        return 1
+    fi
+
+    if ! chmod 0755 "$tmp"; then
+        rm -f "$tmp"
+        echo "zen-ctl: could not set installation permissions" >&2
+        return 1
+    fi
+
+    if ! mv -f -- "$tmp" "$target"; then
+        rm -f "$tmp"
+        echo "zen-ctl: could not install $target" >&2
+        return 1
+    fi
+
+    case ":$PATH:" in
+        *":$HOME/.local/bin:"*) ;;
+        *) echo "zen-dev: note: $HOME/.local/bin is not in PATH" >&2 ;;
+    esac
+    echo "zen-dev installed at $target"
+    echo "  zen-dev            list tools + install state"
+    echo "  zen-dev update     self-update from the repo"
+}
+
 case "${1:-}" in
     check)   shift; cmd_check "$@" ;;
     status)  shift; cmd_status "$@" ;;
     upgrade) shift; cmd_upgrade "$@" ;;
     switch)  shift; cmd_switch  "$@" ;;
+    zen-dev) shift; cmd_zen_dev "$@" ;;
     help|-h|--help|"")
-        echo "usage: zen-ctl check | status | upgrade [--apply] | switch [--list|<tag>]"
+        echo "usage: zen-ctl check | status | upgrade [--apply] | switch [--list|<tag>] | zen-dev"
         echo "  check    probe upstream; shows download size; rc1 = update available"
         echo "  status   running/staged digest + live remote check"
         echo "  upgrade  stage an update (never automatic); --apply reboots into it"
         echo "  switch   roll the machine to a stable|testing|dev tag (browse latest"
         echo "           per flavor, probe target, explicit confirm; --list is"
         echo "           read-only, no elevation)"
-        echo "Sudo is prompted automatically; cron runs it as root weekly (Sat 22:00)." ;;
+        echo "  zen-dev  install/refresh user-local zen-dev into ~/.local/bin"
+        echo "           (raw main, sanity-checked; never uses sudo or touches /usr)"
+        echo "Sudo is prompted automatically for system commands; cron runs check as"
+        echo "root weekly (Sat 22:00). zen-dev is unsigned user tooling by design." ;;
     *) echo "zen-ctl: unknown subcommand '$1'" >&2; exit 2 ;;
 esac
