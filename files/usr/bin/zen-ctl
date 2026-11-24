@@ -2,6 +2,7 @@
 # zen-ctl — upgrade check/status/apply for zen-bootc.
 # Contract (verified 2026-11-10 on bootc-vm): no-update=empty+rc0;
 # available=prose+rc0; unsigned ref=error+rc1. State: /var/lib/zen-ctl/last-check.
+# Update size (bootc's "Total/Added/Removed layers ... Size:") is shown now.
 set -u
 
 STATE_DIR=/var/lib/zen-ctl
@@ -17,7 +18,7 @@ save_state() { mkdir -p "$STATE_DIR" && printf '%s\n' "$1" > "$STATE_DIR/last-ch
 
 cmd_check() {
     for_sub check "$@"
-    local out rc digest ver
+    local out rc digest ver size added removed
     out=$(bootc upgrade --check 2>&1) && rc=0 || rc=$?
     if [ "$rc" -ne 0 ]; then
         save_state "$(date -Is) error $(printf '%s' "$out" | head -1)"
@@ -35,12 +36,21 @@ cmd_check() {
     if printf '%s' "$out" | grep -q '^Update available for:'; then
         digest=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Digest: //p' | head -1)
         ver=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Version: //p' | head -1)
-        save_state "$(date -Is) available ${digest:-?} ${ver:-?}"
-        logger -t zen-ctl "check: update available ${ver:-} ${digest:-}"
+        size=$(printf '%s\n' "$out" | sed -n 's/^Total new layers:.*Size: //p' | head -1)
+        added=$(printf '%s\n' "$out" | sed -n 's/^Added layers:.*Size: //p' | head -1)
+        removed=$(printf '%s\n' "$out" | sed -n 's/^Removed layers:.*Size: //p' | head -1)
+        save_state "$(date -Is) available ${digest:-?} ${ver:-?} ${size:-?}"
+        logger -t zen-ctl "check: update available ${ver:-} ${digest:-} ${size:-}"
         echo "zen-ctl: update available ${ver:-(version unknown)} ${digest:-}"
-        # wall = cron channel only; interactive runs already show the line
+        if [ -n "${size:-}" ]; then
+            echo "          size: ${size}"
+        fi
+        if [ -n "${added:-}" ] || [ -n "${removed:-}" ]; then
+            echo "          layers: +${added:-?} added / -${removed:-?} removed"
+        fi
+        # wall = cron channel only; interactive runs already show the lines
         # above (wall would re-broadcast into the same pts = duplicate).
-        [ -t 0 ] || { echo "zen-ctl: update available — run 'zen-ctl upgrade'" | wall 2>/dev/null || true; }
+        [ -t 0 ] || { echo "zen-ctl: update available ${size:+($size) }— run 'zen-ctl upgrade'" | wall 2>/dev/null || true; }
         return 1
     fi
     save_state "$(date -Is) unknown $(printf '%s' "$out" | head -1)"
@@ -52,7 +62,7 @@ cmd_check() {
 
 cmd_status() {
     for_sub status "$@"
-    local sj d1 v1 tag d2 out
+    local sj d1 v1 tag d2 out d3 v2 size
     sj=$(bootc status --json 2>/dev/null)
     d1=$(printf '%s' "$sj" | dig '.status.booted.image.imageDigest')
     v1=$(printf '%s' "$sj" | dig '.status.booted.image.version')
@@ -74,8 +84,10 @@ cmd_status() {
     fi
     d3=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Digest: //p' | head -1)
     v2=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Version: //p' | head -1)
+    size=$(printf '%s\n' "$out" | sed -n 's/^Total new layers:.*Size: //p' | head -1)
     echo "remote:  update available ${v2:-} ${d3:-}"
-    save_state "$(date -Is) available ${d3:-?} ${v2:-?}"
+    [ -n "${size:-}" ] && echo "         size: ${size}"
+    save_state "$(date -Is) available ${d3:-?} ${v2:-?} ${size:-?}"
     return 1
 }
 
@@ -150,7 +162,7 @@ case "${1:-}" in
     switch)  shift; cmd_switch  "$@" ;;
     help|-h|--help|"")
         echo "usage: zen-ctl check | status | upgrade [--apply] | switch [--list|<tag>]"
-        echo "  check    probe upstream digest; rc1 = update available"
+        echo "  check    probe upstream; shows download size; rc1 = update available"
         echo "  status   running/staged digest + live remote check"
         echo "  upgrade  stage an update (never automatic); --apply reboots into it"
         echo "  switch   roll the machine to a stable|testing|dev tag (browse latest"

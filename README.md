@@ -50,7 +50,7 @@ Installer ISO: Actions → "Publish ISO" (role checkboxes), or
 ## Updates
 
 ```bash
-zen-ctl check            # probe digest; also via /etc/cron.d/zen-ctl (Sat 22:00)
+zen-ctl check            # probe digest + download size; also via /etc/cron.d/zen-ctl (Sat 22:00)
 zen-ctl status           # tracking tag + running/staged digest + remote check
 zen-ctl upgrade          # stage an update (manual only)
 zen-ctl upgrade --apply
