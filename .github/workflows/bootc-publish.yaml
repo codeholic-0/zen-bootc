@@ -1,4 +1,4 @@
-name: Build and Push Fedora Bootc
+name: ZenC OS Image Publish
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
   changes:
     # Scheduled builds build everything; push/dispatch filter by paths.
     if: github.event_name == 'schedule' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     outputs:
@@ -111,7 +111,7 @@ jobs:
     name: Build ${{ matrix.flavor.role }}
     needs: changes
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -329,7 +329,7 @@ jobs:
     name: Build dev
     needs: [changes, build]
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read

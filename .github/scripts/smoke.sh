@@ -30,25 +30,28 @@ check() {
     fi
 }
 
+# Fedora major version is baked as ENV FEDORA_VER in the Containerfiles
+VER=${FEDORA_VER:?FEDORA_VER not set in image}
+
 # --- Base image invariants (testing, final, dev) ---
 # PRETTY_NAME differs by flavor ("ZenC OS 45" vs "ZenC OS 45 (KDE Plasma
 # Desktop)"), so match the prefix; VERSION_ID is identical on both.
-check "os-release NAME"         grep -q '^NAME="ZenC OS"' /etc/os-release
-check "os-release VERSION_ID"   grep -q '^VERSION_ID=45$' /etc/os-release
-check "PRETTY_NAME ZenC OS 45"  grep -q '^PRETTY_NAME="ZenC OS 45' /usr/lib/os-release
-check "os-release symlink"      test "$(readlink /etc/os-release)" = "../usr/lib/os-release"
+check "os-release NAME"              grep -q '^NAME="ZenC OS"' /etc/os-release
+check "os-release VERSION_ID ${VER}" grep -q "^VERSION_ID=${VER}$" /etc/os-release
+check "PRETTY_NAME ZenC OS ${VER}"   grep -q "^PRETTY_NAME=\"ZenC OS ${VER}" /usr/lib/os-release
+check "os-release symlink"           test "$(readlink /etc/os-release)" = "../usr/lib/os-release"
 
-check "zen-ctl syntax"          bash -n /usr/bin/zen-ctl
-check "zen-ctl executable"      test -x /usr/bin/zen-ctl
-check "zen-ctl help"            zen-ctl help
-check "zen-ctl cron"            test -f /etc/cron.d/zen-ctl
+check "zen-ctl syntax"               bash -n /usr/bin/zen-ctl
+check "zen-ctl executable"           test -x /usr/bin/zen-ctl
+check "zen-ctl help"                 zen-ctl help
+check "zen-ctl cron"                 test -f /etc/cron.d/zen-ctl
 
-check "bootc on PATH"           command -v bootc
-check "jq on PATH"              command -v jq
+check "bootc on PATH"                command -v bootc
+check "jq on PATH"                   command -v jq
 
-check "policy sigstoreSigned"   grep -q sigstoreSigned /etc/containers/policy.json
-check "cosign public key"       test -f /usr/share/containers/cosign.pub
-check "docker group"            grep -q '^g docker' /usr/lib/sysusers.d/zen-bootc.conf
+check "policy sigstoreSigned"        grep -q sigstoreSigned /etc/containers/policy.json
+check "cosign public key"            test -f /usr/share/containers/cosign.pub
+check "docker group"                 grep -q '^g docker' /usr/lib/sysusers.d/zen-bootc.conf
 
 # --- Dev flavor: toolchain + VSCodium layer ---
 if [ "$ROLE" = dev ]; then
