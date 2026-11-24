@@ -11,6 +11,8 @@ on:
       - "policy.json"
       - "files/**"
       - ".github/workflows/bootc-publish.yaml"
+      - "cosign.pub"
+      - "registries.d/**"
   # Weekly rebuild: tracks Fedora 45 package/base updates without any commits.
   # 18:05 UTC Saturday (off-peak offset from the hour).
   schedule:
@@ -43,7 +45,7 @@ env:
 # Superseded runs die.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   changes:
@@ -74,13 +76,18 @@ jobs:
               - 'Containerfile.minimal'
             testing:
               - 'Containerfile.testing'
+              - 'policy.json'
+              - 'cosign.pub'
+              - 'registries.d/**'
               - 'files/**'
-              - '!files/home/**'   # user-local tooling (zen-dev) is not baked
+              - '!files/home/**'
             final:
               - 'Containerfile'
               - 'policy.json'
               - 'files/**'
               - '!files/home/**'
+              - 'cosign.pub'
+              - 'registries.d/**'
               - '.github/workflows/bootc-publish.yaml'
             # dev tracks stable: stable inputs rebuild dev so its base
             # never lags the promotion. zen-dev changes ride here too —
@@ -91,12 +98,15 @@ jobs:
               - 'policy.json'
               - 'files/**'
               - '!files/home/**'
+              - 'cosign.pub'
+              - 'registries.d/**'
               - '.github/workflows/bootc-publish.yaml'
 
   # One matrix job for all three flavors; per-flavor logic is matrix data.
   build:
     name: Build ${{ matrix.flavor.role }}
     needs: changes
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,7 +126,7 @@ jobs:
             tag: testing
             dtag_prefix: testing
             extra_tags: ""
-            smoke: 'false'
+            smoke: 'true'
           - role: final
             dockerfile: Containerfile
             tag: stable
@@ -204,6 +214,8 @@ jobs:
             grep -q "^PRETTY_NAME=\"ZenC OS 45\"" /usr/lib/os-release
             [ "$(readlink /etc/os-release)" = "../usr/lib/os-release" ]
             bash -n /usr/bin/zen-ctl
+            test -x /usr/bin/zen-ctl
+            zen-ctl help
             command -v bootc jq
             grep -q sigstoreSigned /etc/containers/policy.json
             [ -f /usr/share/containers/cosign.pub ]
@@ -318,6 +330,7 @@ jobs:
   dev:
     name: Build dev
     needs: [changes, build]
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
