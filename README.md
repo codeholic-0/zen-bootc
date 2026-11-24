@@ -100,7 +100,7 @@ registries.d/                        registries.d snippet shipped into the image
 disk_config/iso-kde.toml             bootc-image-builder config for the ISO
 files/                               shipped files (usr/bin/zen-ctl = system CLI + zen-dev bootstrap, cron, drop-ins; home/.local/bin/zen-dev = user-local tool)
 docs/iso.md                          ISO build + SourceForge guide
-plymouth.toml                        boot kernel args
+files/usr/lib/bootc/kargs.d/10-plymouth.toml  boot kernel args
 legacy/nix/                          dormant Nix-era leftovers; image has NO Nix
 .github/workflows/bootc-publish.yaml CI: build -> chunkah rechunk -> push -> sign
 .github/workflows/iso-publish.yaml   CI: role-choice ISO -> SourceForge (manual)
