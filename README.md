@@ -94,7 +94,7 @@ Containerfile{,.testing,.minimal,.dev} image specs (promote: copy testing->Conta
 policy.json                          signed-ref policy shipped into the image
 registries.d/                        registries.d snippet shipped into the image
 disk_config/iso-kde.toml             bootc-image-builder config for the ISO
-files/                               shipped files (usr/local/bin/zen-ctl, cron, drop-ins; home/.local/bin/zen-dev = user-local tool)
+files/                               shipped files (usr/bin/zen-ctl, cron, drop-ins; home/.local/bin/zen-dev = user-local tool)
 docs/iso.md                          ISO build + SourceForge guide
 plymouth.toml                        boot kernel args
 legacy/nix/                          dormant Nix-era leftovers; image has NO Nix

@@ -129,9 +129,9 @@ COPY files/usr/lib/systemd/system/systemd-remount-fs.service.d/10-composefs-skip
 COPY files/usr/lib/sysusers.d/zen-bootc.conf /usr/lib/sysusers.d/zen-bootc.conf
 
 # zen-ctl: upgrade check/status/apply CLI + weekly cron
-COPY files/usr/local/bin/zen-ctl /usr/local/bin/zen-ctl
+COPY files/usr/bin/zen-ctl /usr/bin/zen-ctl
 COPY files/etc/cron.d/zen-ctl /etc/cron.d/zen-ctl
-RUN chmod 0755 /usr/local/bin/zen-ctl && chmod 0644 /etc/cron.d/zen-ctl
+RUN chmod 0755 /usr/bin/zen-ctl && chmod 0644 /etc/cron.d/zen-ctl
 
 # Build-hygiene cleanup 
 # No dnf clean all (cache mounts): purge runtime-only state. /var/cache/* is

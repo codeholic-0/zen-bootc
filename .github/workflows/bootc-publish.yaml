@@ -203,7 +203,7 @@ jobs:
             grep -q "^NAME=\"ZenC OS\"" /etc/os-release
             grep -q "^PRETTY_NAME=\"ZenC OS 45\"" /usr/lib/os-release
             [ "$(readlink /etc/os-release)" = "../usr/lib/os-release" ]
-            bash -n /usr/local/bin/zen-ctl
+            bash -n /usr/bin/zen-ctl
             command -v bootc jq
             grep -q sigstoreSigned /etc/containers/policy.json
             [ -f /usr/share/containers/cosign.pub ]
@@ -376,7 +376,7 @@ jobs:
             grep -q "^NAME=\"ZenC OS\"" /etc/os-release
             grep -q "^PRETTY_NAME=\"ZenC OS 45\"" /usr/lib/os-release
             [ "$(readlink /etc/os-release)" = "../usr/lib/os-release" ]
-            bash -n /usr/local/bin/zen-ctl
+            bash -n /usr/bin/zen-ctl
             command -v bootc jq gcc make cmake python3 codium
             grep -q sigstoreSigned /etc/containers/policy.json
             [ -f /usr/share/containers/cosign.pub ]
