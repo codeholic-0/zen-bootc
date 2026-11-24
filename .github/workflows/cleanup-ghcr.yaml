@@ -36,7 +36,7 @@ jobs:
           package: zen-bootc
           delete-tags: '^stable-[0-9]{8}-[0-9a-f]{7}$'
           use-regex: true
-          keep-n-tagged: 6
+          keep-n-tagged: 5
           exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
           delete-untagged: false
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
@@ -49,7 +49,7 @@ jobs:
           package: zen-bootc
           delete-tags: '^testing-[0-9]{8}-[0-9a-f]{7}$'
           use-regex: true
-          keep-n-tagged: 3
+          keep-n-tagged: 2
           exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
           delete-untagged: false
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
@@ -62,7 +62,7 @@ jobs:
           package: zen-bootc
           delete-tags: '^dev-[0-9]{8}-[0-9a-f]{7}$'
           use-regex: true
-          keep-n-tagged: 6
+          keep-n-tagged: 5
           exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
           delete-untagged: false
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
@@ -75,7 +75,7 @@ jobs:
           package: zen-bootc
           delete-tags: '^minimal-[0-9]{8}-[0-9a-f]{7}$'
           use-regex: true
-          keep-n-tagged: 3
+          keep-n-tagged: 2
           exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
           delete-untagged: false
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
