@@ -11,6 +11,7 @@ on:
       - "policy.json"
       - "files/**"
       - ".github/workflows/bootc-publish.yaml"
+      - ".github/scripts/**"
       - "cosign.pub"
       - "registries.d/**"
   # Weekly rebuild: tracks Fedora 45 package/base updates without any commits.
@@ -81,6 +82,7 @@ jobs:
               - 'registries.d/**'
               - 'files/**'
               - '!files/home/**'
+              - '.github/scripts/**'
             final:
               - 'Containerfile'
               - 'policy.json'
@@ -89,6 +91,7 @@ jobs:
               - 'cosign.pub'
               - 'registries.d/**'
               - '.github/workflows/bootc-publish.yaml'
+              - '.github/scripts/**'
             # dev tracks stable: stable inputs rebuild dev so its base
             # never lags the promotion. zen-dev changes ride here too —
             # the dev job's fetch check validates the raw URL.
@@ -101,6 +104,7 @@ jobs:
               - 'cosign.pub'
               - 'registries.d/**'
               - '.github/workflows/bootc-publish.yaml'
+              - '.github/scripts/**'
 
   # One matrix job for all three flavors; per-flavor logic is matrix data.
   build:
@@ -203,26 +207,19 @@ jobs:
         # Runs the assembled image (the artifact that gets pushed+signed) and
         # asserts invariants before rechunk: branding, zen-ctl wiring,
         # signature policy, shipped files. minimal excluded (stagnant flavor).
+        # Checks live in .github/scripts/smoke.sh (shared with the dev job) and
+        # are fed on stdin so they are not baked into the image. The script
+        # prints "ok:"/"FAIL: <desc>" per assertion and traces the failing
+        # command, so a broken invariant names itself in the log.
         if: env.SHOULD_RUN == 'true' && matrix.flavor.smoke == 'true'
         env:
           TAG: ${{ matrix.flavor.tag }}
+          ROLE: ${{ matrix.flavor.role }}
         run: |
           set -euo pipefail
           IMAGE="${IMAGE,,}"
-          podman run --rm "$IMAGE:$TAG" /bin/bash -c '
-            set -euo pipefail
-            grep -q "^NAME=\"ZenC OS\"" /etc/os-release
-            grep -q "^PRETTY_NAME=\"ZenC OS 45\"" /usr/lib/os-release
-            [ "$(readlink /etc/os-release)" = "../usr/lib/os-release" ]
-            bash -n /usr/bin/zen-ctl
-            test -x /usr/bin/zen-ctl
-            zen-ctl help
-            command -v bootc jq
-            grep -q sigstoreSigned /etc/containers/policy.json
-            [ -f /usr/share/containers/cosign.pub ]
-            [ -f /etc/cron.d/zen-ctl ]
-            grep -q "^g docker" /usr/lib/sysusers.d/zen-bootc.conf
-          '
+          podman run --rm -i "$IMAGE:$TAG" /bin/bash -s -- "$ROLE" \
+            < .github/scripts/smoke.sh
 
       - name: zen-dev fetch check (user-local, not baked)
         # zen-dev lives in $HOME, not the image; CI validates the raw URL
@@ -382,23 +379,13 @@ jobs:
       - name: Smoke-check image
         # Base asserts (inherited from :stable) + the dev layer: toolchain,
         # VSCodium. zen-dev is NOT baked (user-local on all flavors).
+        # Checks live in .github/scripts/smoke.sh; ROLE=dev adds toolchain checks.
         if: env.SHOULD_RUN == 'true'
         run: |
           set -euo pipefail
           IMAGE="${IMAGE,,}"
-          podman run --rm "$IMAGE:dev" /bin/bash -c '
-            set -euo pipefail
-            grep -q "^NAME=\"ZenC OS\"" /etc/os-release
-            grep -q "^PRETTY_NAME=\"ZenC OS 45\"" /usr/lib/os-release
-            [ "$(readlink /etc/os-release)" = "../usr/lib/os-release" ]
-            bash -n /usr/bin/zen-ctl
-            command -v bootc jq gcc make cmake python3 codium
-            grep -q sigstoreSigned /etc/containers/policy.json
-            [ -f /usr/share/containers/cosign.pub ]
-            [ -f /etc/cron.d/zen-ctl ]
-            grep -q "^g docker" /usr/lib/sysusers.d/zen-bootc.conf
-            grep -q vscodium /etc/yum.repos.d/vscodium.repo
-          '
+          podman run --rm -i "$IMAGE:dev" /bin/bash -s -- dev \
+            < .github/scripts/smoke.sh
 
       - name: zen-dev fetch check (user-local, not baked)
         if: env.SHOULD_RUN == 'true'
