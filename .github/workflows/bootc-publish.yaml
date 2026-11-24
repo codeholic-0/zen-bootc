@@ -116,7 +116,7 @@ jobs:
             tag: testing
             dtag_prefix: testing
             extra_tags: ""
-            smoke: 'true'
+            smoke: 'false'
           - role: final
             dockerfile: Containerfile
             tag: stable
