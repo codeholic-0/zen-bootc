@@ -57,14 +57,13 @@ RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
     && dnf -y install @multimedia
 
 # Plymouth boot splash 
-# kargs side lives in plymouth.toml (rhgb quiet).
+# kargs side lives in files/usr/lib/bootc/kargs.d/10-plymouth.toml (rhgb quiet).
+COPY files/usr/lib/bootc/kargs.d/10-plymouth.toml /usr/lib/bootc/kargs.d/10-plymouth.toml
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
     dnf -y install \
         plymouth \
         plymouth-system-theme \
         plymouth-theme-breeze
-
-RUN plymouth-set-default-theme breeze
 
 # Media & personal apps
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
