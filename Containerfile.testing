@@ -78,7 +78,6 @@ RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
         guvcview
 
 # Containers 
-# distrobox is the explicit dev userland (image carries no dev toolchain).
 # Flatpak Setup
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
     dnf -y install \
@@ -87,7 +86,6 @@ RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
         docker-buildx-plugin \
         podman \
         podman-compose \
-        distrobox \
         flatpak \
         fedora-flathub-remote \
         fedora-workstation-repositories \
@@ -98,11 +96,12 @@ RUN flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/r
 
 
 # Shell Utils & Tooling
+# distrobox is the explicit dev userland (image carries no dev toolchain).
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
     dnf -y install \
     udisks2-btrfs libblockdev-btrfs cryfs \
     earlyoom cronie cronie-anacron crontabs lm_sensors \
-    zsh git \
+    zsh git distrobox\
     btop fastfetch plocate bat eza fd-find fzf ripgrep zoxide dos2unix smem scrub
 
 # Custom Fetch Logo
