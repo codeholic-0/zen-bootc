@@ -16,7 +16,7 @@ LABEL org.opencontainers.image.title="zen-bootc" \
 RUN cp /usr/share/dnf5/repos.d/*.repo /etc/yum.repos.d/
 
 # --- 24) Enable Services ---
-RUN systemctl enable NetworkManager.service plasmalogin.service docker.service earlyoom.service crond.service auditd.service -f
+RUN systemctl enable NetworkManager.service plasmalogin.service -f
 
 # --- 24b) Branding: ZenC OS (dnf-compatible: ID/VERSION_ID left untouched) ---
 # identity-kde owns /usr/lib/os-release; last-writer-wins at image build.
