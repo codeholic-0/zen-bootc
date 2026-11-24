@@ -108,6 +108,7 @@ jobs:
     needs: changes
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -241,7 +242,7 @@ jobs:
           set -euox pipefail
           IMAGE="${IMAGE,,}"
           CHUNKAH_CONFIG_FILE="$(mktemp)"
-          CHUNKAH_OUTPUT_DIR="$(mktemp -d "${WORKSPACE:-/tmp}"/zen-bootc-chunkah-XXXXXX)"
+          CHUNKAH_OUTPUT_DIR="$(mktemp -d "$RUNNER_TEMP"/zen-bootc-chunkah-XXXXXX)"
           podman inspect "$IMAGE:$TAG" > "$CHUNKAH_CONFIG_FILE"
 
           podman run --rm \
@@ -332,6 +333,7 @@ jobs:
     needs: [changes, build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -411,7 +413,7 @@ jobs:
           set -euox pipefail
           IMAGE="${IMAGE,,}"
           CHUNKAH_CONFIG_FILE="$(mktemp)"
-          CHUNKAH_OUTPUT_DIR="$(mktemp -d "${WORKSPACE:-/tmp}"/zen-bootc-chunkah-XXXXXX)"
+          CHUNKAH_OUTPUT_DIR="$(mktemp -d "$RUNNER_TEMP"/zen-bootc-chunkah-XXXXXX)"
           podman inspect "$IMAGE:dev" > "$CHUNKAH_CONFIG_FILE"
 
           podman run --rm \
