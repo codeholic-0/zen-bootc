@@ -49,11 +49,24 @@ check "zen-ctl cron"                 test -f /etc/cron.d/zen-ctl
 check "bootc on PATH"                command -v bootc
 check "jq on PATH"                   command -v jq
 
+# Fastfetch check
+check "fastfetch config"             test -s /etc/fastfetch/config.jsonc
+check "fastfetch logo"               test -s /usr/share/zen-bootc/branding/zenc.txt
+check "fastfetch logo wired"         test -f "$(jq -r '.logo.source' /etc/fastfetch/config.jsonc)"
+check "fastfetch renders"            fastfetch --pipe false
+
 check "policy sigstoreSigned"        grep -q sigstoreSigned /etc/containers/policy.json
 check "cosign public key"            test -f /usr/share/containers/cosign.pub
 check "docker group"                 grep -q '^g docker' /usr/lib/sysusers.d/zen-bootc.conf
 
-# --- Dev flavor: toolchain + VSCodium layer ---
+check "zen-ctl cron wiring"          grep -q 'root /usr/bin/zen-ctl check' /etc/cron.d/zen-ctl
+
+# Services enabled check
+for svc in docker crond earlyoom NetworkManager plasmalogin; do
+    check "enabled: $svc" systemctl is-enabled --quiet "$svc"
+done
+
+# Dev Tooling Check
 if [ "$ROLE" = dev ]; then
     check "gcc on PATH"         command -v gcc
     check "make on PATH"        command -v make
@@ -61,6 +74,12 @@ if [ "$ROLE" = dev ]; then
     check "python3 on PATH"     command -v python3
     check "codium on PATH"      command -v codium
     check "vscodium repo"       grep -q vscodium /etc/yum.repos.d/vscodium.repo
+    check "autoconf on PATH"    command -v autoconf
+    check "pkg-config on PATH"  command -v pkg-config
+    check "clangd on PATH"      command -v clangd
+    check "lld on PATH"         command -v lld
+    check "bear on PATH"        command -v bear
+    check "yq on PATH"          command -v yq
 fi
 
 echo "smoke: all checks passed"
