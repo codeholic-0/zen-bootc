@@ -3,7 +3,7 @@
   "logo": {
     "type": "file",
     "source": "/usr/share/zen-bootc/branding/zenc.txt",
-    "padding": { "left": 4, "right": 4 }
+    "padding": { "left": 4, "right": 4, "top": 4 }
   },
   "modules": [
     "title", "separator", "os", "host", "kernel", "uptime", "packages",

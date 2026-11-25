@@ -1,4 +1,4 @@
-FROM quay.io/fedora-ostree-desktops/kinoite:45
+FROM quay.io/fedora/fedora-bootc:45
 ENV FEDORA_VER="45"
 
 # System-wide metadata
@@ -31,6 +31,13 @@ RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
 # /usr/share/dnf5/repos.d — without this bridge anaconda-iso builds fail.
 RUN cp /usr/share/dnf5/repos.d/*.repo /etc/yum.repos.d/
 
+# Group install Main components
+RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
+    dnf -y group install \
+    standard core fonts base-graphical hardware-support \
+    networkmanager-submodules printing input-methods \
+    kde-desktop
+    
 
 # KDE Debloat
 RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
@@ -73,6 +80,7 @@ RUN --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
         mediawriter \
         gthumb \
         yt-dlp \
+        persepolis \
         vlc \
         zenity \
         kate \
