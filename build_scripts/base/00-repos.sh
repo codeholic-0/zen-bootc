@@ -1,0 +1,36 @@
+#!/usr/bin/bash
+set -Eeuo pipefail
+
+source /ctx/build_scripts/lib/common.sh
+require_root
+log_group "$(basename "$0")"
+
+: "${FEDORA_VER:?FEDORA_VER must be set}"
+
+dnf install -y \
+    "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VER}.noarch.rpm" \
+    "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VER}.noarch.rpm"
+
+dnf config-manager addrepo \
+    --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
+
+dnf copr enable imput/helium -y
+
+dnf config-manager setopt \
+    'rpmfusion-free.enabled=1' \
+    'rpmfusion-free-updates.enabled=1' \
+    'rpmfusion-nonfree.enabled=1' \
+    'rpmfusion-nonfree-updates.enabled=1'
+
+dnf config-manager setopt fedora-cisco-openh264.enabled=1
+
+dnf install -y --refresh \
+    rpmfusion-free-release-tainted \
+    rpmfusion-nonfree-release-tainted
+
+dnf makecache
+
+# bootc-image-builder reads repositories from /etc/yum.repos.d.
+cp /usr/share/dnf5/repos.d/*.repo /etc/yum.repos.d/
+
+log_group_end
