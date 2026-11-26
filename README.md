@@ -18,7 +18,7 @@ Published at: `ghcr.io/codeholic-0/zen-bootc`
 - **Multimedia:** `@multimedia` plus RPM Fusion `ffmpeg` (with tainted repos
   enabled), VLC, yt-dlp, gthumb, guvcview, media writer, and a Breeze Plymouth
   splash.
-- **Browsers & desktop apps:** LibreWolf, Helium, Persepolis, Kate, Zenity.
+- **Browsers & desktop apps:** Persepolis, Kate, Zenity.
 - **Dev toolchain (baked in):** gcc/g++, clang, gdb, make/cmake, autotools,
   VSCodium, Neovim, git/git-lfs/gh, jq/yq/sqlite, shellcheck, and Verilog tools
   (iverilog, verilator, gtkwave).

@@ -138,8 +138,6 @@ DESKTOP_APPS=(
     # Desktop utilities
     zenity
     mediawriter
-    helium-bin
-    librewolf
     persepolis
 )
 

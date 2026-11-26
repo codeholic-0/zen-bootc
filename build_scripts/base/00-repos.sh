@@ -14,9 +14,6 @@ dnf install -y \
 dnf config-manager addrepo --overwrite \
     --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
 
-dnf -y copr enable imput/helium
-dnf -y config-manager addrepo --from-repofile=https://repo.librewolf.net/librewolf.repo
-
 dnf config-manager setopt \
     'rpmfusion-free.enabled=1' \
     'rpmfusion-free-updates.enabled=1' \
