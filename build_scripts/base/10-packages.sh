@@ -26,48 +26,15 @@ dnf -y remove "${KDE_REMOVE[@]}"
 dnf -y autoremove
 
 dnf_install \
-    mediawriter \
-    gthumb \
-    yt-dlp \
-    vlc \
-    zenity \
-    kate \
-    guvcview \
-    docker-ce \
-    docker-compose-plugin \
-    docker-buildx-plugin \
-    podman \
-    podman-compose \
-    flatpak \
-    fedora-flathub-remote \
-    fedora-workstation-repositories \
-    fedora-third-party \
-    udisks2-btrfs \
-    libblockdev-btrfs \
-    cryfs \
-    earlyoom \
-    cronie \
-    cronie-anacron \
-    crontabs \
-    lm_sensors \
-    zsh \
-    git \
-    curl \
-    wget2 \
-    wget2-wget \
-    jq \
-    distrobox \
-    btop \
-    fastfetch \
-    plocate \
-    bat \
-    eza \
-    fd-find \
-    fzf \
-    ripgrep \
-    zoxide \
-    dos2unix \
-    smem \
-    scrub
+    gthumb yt-dlp vlc \
+    zenity kate guvcview mediawriter\
+    docker-ce docker-compose-plugin docker-buildx-plugin podman podman-compose \
+    flatpak fedora-flathub-remote fedora-workstation-repositories fedora-third-party \
+    udisks2-btrfs libblockdev-btrfs cryfs \
+    earlyoom cronie cronie-anacron crontabs \
+    scrub plocate\
+    zsh git jq distrobox \
+    btop fastfetch lm_sensors smem\
+    bat eza fd-find fzf ripgrep zoxide dos2unix
 
 log_group_end
