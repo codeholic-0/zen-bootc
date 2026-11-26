@@ -26,13 +26,26 @@ KDE_REMOVE=(
 dnf -y remove "${KDE_REMOVE[@]}"
 dnf -y autoremove
 
-dnf -y group install development-tools --setopt=install_weak_deps=False
-
 DEV_DEPS=(
+    # Compilers & build tools
+    gcc
+    gcc-c++
+    automake
+    autoconf
+    make
+    cmake
+    lld
+    python3
+    python3-pip
+
+    # Debugging
+    gdb
+
     # Editors & IDEs
     neovim
     codium
     kate
+    tmux
 
     # Version control
     git
