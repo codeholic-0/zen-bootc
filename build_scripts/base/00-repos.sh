@@ -31,6 +31,10 @@ dnf install -y --refresh \
 dnf makecache
 
 # bootc-image-builder reads repositories from /etc/yum.repos.d.
-cp /usr/share/dnf5/repos.d/*.repo /etc/yum.repos.d/
+if compgen -G '/usr/share/dnf5/repos.d/*.repo' >/dev/null; then
+    cp /usr/share/dnf5/repos.d/*.repo /etc/yum.repos.d/
+else
+    echo "00-repos: warning: no repo files in /usr/share/dnf5/repos.d to bridge" >&2
+fi
 
 log_group_end

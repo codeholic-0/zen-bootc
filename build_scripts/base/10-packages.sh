@@ -22,7 +22,7 @@ KDE_REMOVE=(
     krfb
 )
 
-dnf_remove "${KDE_REMOVE[@]}"
+dnf -y remove --skip-unavailable "${KDE_REMOVE[@]}"
 dnf -y autoremove
 
 dnf_install \
