@@ -21,7 +21,7 @@ find /run -mindepth 1 \
     ! -path '/run/secrets' \
     ! -path '/run/secrets/*' \
     ! -name '.containerenv' \
-    -exec rm -rf {} +
+    -delete
 
 # /tmp must be empty for bootc lint; clear dotfiles too.
 rm -rf /tmp/* /tmp/.[!.]* /tmp/..?*
