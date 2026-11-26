@@ -256,10 +256,10 @@ cmd_upgrade() {
     exec bootc upgrade
 }
 
-# --- switch: browse/roll to stable|testing|dev tags (manual, confirmed, policy-guarded) ---
-tags_list() {   # dated anchors only, newest first (rolling tags shown separately)
+# --- switch: browse/roll to the single image's tags (manual, confirmed, policy-guarded) ---
+tags_list() {   # dated anchors only, newest first (rolling tag shown separately)
     podman search --list-tags "$REPO" 2>/dev/null | awk '{print $2}' \
-        | grep -E '^(stable|testing|dev)-[0-9]{8}-[0-9a-f]{7}$' | LC_ALL=C sort -r
+        | grep -E '^latest-[0-9]{8}-[0-9a-f]{7}$' | LC_ALL=C sort -r
 }
 
 switch_show() {   # read-only listing, no elevation assumed
@@ -267,7 +267,7 @@ switch_show() {   # read-only listing, no elevation assumed
     tracked=$(bootc status --json 2>/dev/null | dig '.status.booted.image.image.image')
     [ "$tracked" = "null" ] && tracked=""
     dated=$(tags_list)
-    for f in stable testing dev; do
+    for f in latest; do
         echo "$f:"
         printf '  %-30s%s\n' "$f" "$([ "$REPO:$f" = "$tracked" ] && echo '   <- current')"
         printf '%s\n' "$dated" | grep "^$f-" | head -4 | while read -r t; do
@@ -291,9 +291,11 @@ cmd_switch() {
         read -r tag
         case "${tag:-q}" in q|""|*[!a-zA-Z0-9._-]*) echo "zen-ctl: no tag selected"; return 0 ;; esac
     fi
-    case "$tag" in latest) tag=stable ;; stable|testing|dev) ;; *)
-        tags_list | grep -qx "$tag" || { echo "zen-ctl: not a known stable/testing/dev tag: $tag" >&2; return 2; }
-        ;;
+    case "$tag" in
+        latest) ;;
+        *)
+            tags_list | grep -qx "$tag" || { echo "zen-ctl: not a known latest tag: $tag" >&2; return 2; }
+            ;;
     esac
     echo "== target probe: $REPO:$tag"
     out=$(bootc upgrade --tag "$tag" --check 2>&1) || {
@@ -374,8 +376,8 @@ case "${1:-}" in
         echo "  status          running/staged/rollback image details + live remote check"
         echo "  remove-rollback remove the non-booted rollback deployment permanently"
         echo "  upgrade         stage an update (never automatic); --apply reboots into it"
-        echo "  switch          roll the machine to a stable|testing|dev tag (browse latest"
-        echo "                  per flavor, probe target, explicit confirm; --list is"
+        echo "  switch          roll to :latest or a dated latest-YYYYMMDD-sha7 anchor"
+        echo "                  (browse tags, probe target, explicit confirm; --list is"
         echo "                  read-only, no elevation)"
         echo "  zen-dev         install/refresh user-local zen-dev into ~/.local/bin"
         echo "                  (raw main, sanity-checked; never uses sudo or touches /usr)"

@@ -1,24 +1,23 @@
 # Installer ISO
 
-Manual-dispatch CI builds a bootable network-installer ISO and publishes it to
-SourceForge. Config: `disk_config/iso-kde.toml`.
+Manual-dispatch CI builds a bootable network-installer ISO for the single
+`zen-bootc:latest` image and publishes it to SourceForge. Config:
+[`disk_config/iso-kde.toml`](../disk_config/iso-kde.toml).
 
 ## CI
 
 ```bash
-gh workflow run iso-publish.yaml --ref main -f testing=true          # one
-gh workflow run iso-publish.yaml --ref main -f stable=true -f dev=true   # two
-gh workflow run iso-publish.yaml --ref main -f testing=true -f stable=true -f dev=true  # all three
+gh workflow run iso-publish.yaml --ref main
 ```
 
-Roles are flags: any subset builds concurrently (one matrix leg per role,
-own runner each; untouched roles cost nothing). The Actions UI exposes the
-same three checkboxes.
+One dispatch builds one ISO for `:latest` — no variant selection or extra inputs.
+The Actions UI exposes the same plain "Run workflow" button.
 
-- Press only when the latest image run is green and signed; the workflow
-  cosign-verifies the tag first and the ISO installs that tag at boot.
+- Press only when the latest image run is green and signed: the workflow
+  cosign-verifies `:latest` before building and refuses to publish an installer
+  for an unsigned image.
 - Output (run summary has the URL):
-  `https://sourceforge.net/projects/zen-bootc/files/<YYYY-MM-DD>/zen-bootc-<role>-<YYYYMMDD>-<sha7>.iso/download`
+  `https://sourceforge.net/projects/zen-bootc/files/<YYYY-MM-DD>/zen-bootc-<YYYYMMDD>-<sha7>.iso/download`
 - Each ISO ships its own `<name>.iso.sha256` beside it (verify with
   `sha256sum -c <name>.iso.sha256`).
 - Secrets: `SF_SSH_PRIVATE_KEY`, `SF_USERNAME`.
@@ -28,7 +27,7 @@ same three checkboxes.
 ## Local build
 
 ```bash
-sudo podman pull ghcr.io/codeholic-0/zen-bootc:testing
+sudo podman pull ghcr.io/codeholic-0/zen-bootc:latest
 mkdir -p output
 sudo podman run --rm -it --privileged \
   -v "$(pwd)/output:/output" \
@@ -36,14 +35,13 @@ sudo podman run --rm -it --privileged \
   -v "$(pwd)/disk_config/iso-kde.toml:/config.toml:ro" \
   quay.io/centos-bootc/bootc-image-builder:latest \
   --rootfs ext4 --type anaconda-iso \
-  ghcr.io/codeholic-0/zen-bootc:testing
+  ghcr.io/codeholic-0/zen-bootc:latest
 ```
 
 Output: `output/bootiso/install.iso`. BIB doesn't auto-pull — the target tag
 must be in storage first. The ISO installs **exactly the image you pass it**:
-the kickstart is role-agnostic — `%post` reads the freshly installed system's
-own origin ref and re-pulls that same tag, so build from `:testing`, `:stable`
-or `:dev` with zero config edits.
+the kickstart `%post` reads the freshly installed system's own origin ref and
+re-pulls that tag, so there is no per-image substitution (normally `:latest`).
 
 ## Install
 

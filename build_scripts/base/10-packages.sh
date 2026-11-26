@@ -25,16 +25,133 @@ KDE_REMOVE=(
 dnf -y remove "${KDE_REMOVE[@]}"
 dnf -y autoremove
 
+DEV_DEPS=(
+    # Compilers & build tools
+    gcc
+    gcc-c++
+    clang
+    automake
+    autoconf
+    make
+    cmake
+
+    # Debugging
+    gdb
+
+    # Editors & IDEs
+    neovim
+    codium
+    kate
+
+    # Verilog
+    iverilog 
+    verilator 
+    gtkwave
+
+    # Version control
+    git
+    git-lfs
+    gh
+
+    # Data & scripting
+    jq
+    yq
+    sqlite
+
+    # Development environments
+    distrobox
+
+    # Code quality
+    shellcheck
+)
+
+SHELL_UTILS=(
+    # Shell
+    zsh
+
+    # Modern CLI replacements
+    bat
+    eza
+    fd-find
+    ripgrep
+
+    # Search & navigation
+    fzf
+    zoxide
+
+    # System monitoring
+    btop
+    fastfetch
+    lm_sensors
+    smem
+
+    # File & text utilities
+    dos2unix
+    plocate
+)
+
+MEDIA=(
+    # Video & audio
+    vlc
+    yt-dlp
+
+    # Image management
+    gthumb
+
+    # Webcam
+    guvcview
+)
+
+CONTAINERS=(
+    # Docker
+    docker-ce
+    docker-compose-plugin
+    docker-buildx-plugin
+
+    # Podman
+    podman
+    podman-compose
+)
+
+SYSTEM_UTILS=(
+    # Disk & filesystem
+    udisks2-btrfs
+    libblockdev-btrfs
+    cryfs
+    scrub
+
+    # Process & resource management
+    earlyoom
+
+    # Scheduling
+    cronie
+    cronie-anacron
+    crontabs
+)
+
+DESKTOP_APPS=(
+    # Desktop utilities
+    zenity
+    mediawriter
+    helium-bin
+    librewolf
+    persepolis
+)
+
+REPOSITORIES=(
+    flatpak
+    fedora-flathub-remote
+    fedora-workstation-repositories
+    fedora-third-party
+)
+
 dnf_install \
-    gthumb yt-dlp vlc \
-    zenity kate guvcview mediawriter\
-    docker-ce docker-compose-plugin docker-buildx-plugin podman podman-compose \
-    flatpak fedora-flathub-remote fedora-workstation-repositories fedora-third-party \
-    udisks2-btrfs libblockdev-btrfs cryfs \
-    earlyoom cronie cronie-anacron crontabs \
-    scrub plocate\
-    zsh git jq distrobox \
-    btop fastfetch lm_sensors smem\
-    bat eza fd-find fzf ripgrep zoxide dos2unix
+    "${DEV_DEPS[@]}" \
+    "${SHELL_UTILS[@]}" \
+    "${MEDIA[@]}" \
+    "${CONTAINERS[@]}" \
+    "${SYSTEM_UTILS[@]}" \
+    "${DESKTOP_APPS[@]}" \
+    "${REPOSITORIES[@]}"
 
 log_group_end

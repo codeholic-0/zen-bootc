@@ -9,7 +9,6 @@ PRETTY_NAME="ZenC OS 45 (KDE Plasma Desktop)"
 ANSI_COLOR="0;38;2;60;110;180"
 LOGO=zenc-logo-icon
 CPE_NAME="cpe:/o:zenc:zenc:45"
-DEFAULT_HOSTNAME="zenc"
 HOME_URL="https://github.com/codeholic-0/zen-bootc"
 DOCUMENTATION_URL="https://github.com/codeholic-0/zen-bootc"
 SUPPORT_URL="https://github.com/codeholic-0/zen-bootc/issues"

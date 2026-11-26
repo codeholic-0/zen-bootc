@@ -1,51 +1,71 @@
 # zen-bootc
 
-A personal Fedora 45 **bootc** OS image: fully-featured KDE Plasma appliance
-— media codecs, full hardware support, basic utilities — no browser, no dev
-toolchain, no Nix. Tooling lives in the `dev` flavor and zen-dev, not here.
+**`main` is my personal OS.** It builds one image for my own machines: a
+single `Containerfile`, one rolling tag (`:latest`), and dated anchors for
+rollback. There are no flavors to promote and no staging pipeline.
+
+If you're looking for the **generic multi-variant setup** (`testing`, `stable`,
+`dev`, `minimal`), it is preserved on the frozen [`backup`](https://github.com/codeholic-0/zen-bootc/tree/backup)
+branch. That branch is a reference snapshot, not an actively maintained image.
 
 Published at: `ghcr.io/codeholic-0/zen-bootc`
 
-## Image variants
+## What's in the image
 
-| Tag | Source file | Purpose |
-|---|---|---|
-| `testing` | `Containerfile.testing` | Worked-on variant; runs on the real machine. |
-| `stable` / `latest` | `Containerfile` | Promoted variant (copy testing → Containerfile). |
-| `dev` | `Containerfile.dev` | Stable base + VSCodium + C/C++ toolchain (gcc/clang/gdb/valgrind/meson/ninja…), gh, neovim. Tracks stable, not testing. |
-| `minimal-latest` | `Containerfile.minimal` | Headless variant. |
-
-`<role>-<YYYYMMDD>-<sha7>` tags are immutable rollback anchors.
+- **Base:** Fedora 45 Kinoite (KDE Plasma), rebranded as ZenC OS.
+- **Debloated:** Firefox, Akonadi, Plasma Discover/Welcome, KWrite, KRfb and
+  XwaylandVideoBridge are removed.
+- **Multimedia:** `@multimedia` plus RPM Fusion `ffmpeg` (with tainted repos
+  enabled), VLC, yt-dlp, gthumb, guvcview, media writer, and a Breeze Plymouth
+  splash.
+- **Browsers & desktop apps:** LibreWolf, Helium, Persepolis, Kate, Zenity.
+- **Dev toolchain (baked in):** gcc/g++, clang, gdb, make/cmake, autotools,
+  VSCodium, Neovim, git/git-lfs/gh, jq/yq/sqlite, shellcheck, and Verilog tools
+  (iverilog, verilator, gtkwave).
+- **Shell & CLI:** zsh, bat, eza, fd, fzf, zoxide, btop, fastfetch, lm_sensors,
+  smem, dos2unix, plocate, distrobox.
+- **Containers & storage:** Docker CE (compose/buildx plugins), Podman,
+  podman-compose, Flatpak/Flathub, Btrfs tools, cryfs, scrub.
+- **Services & tuning:** NetworkManager, KDE login (`plasmalogin`), Docker, earlyoom and
+  cron enabled; `NetworkManager-wait-online` disabled/masked.
+- **Transport security:** images are cosign-signed; in-image policy enforces
+  valid signatures for this repo only.
+- No Nix — `legacy/nix/` is dormant history. Optional user-local tooling lives
+  in `zen-dev`, never in `/usr`.
 
 ## Pipeline
 
-- Rechunked with [chunkah](https://github.com/coreos/chunkah) → ~128 layers;
+- Built from one [`Containerfile`](Containerfile) whose steps live in
+  [`build_scripts/`](build_scripts) (repos → packages → multimedia → services →
+  cleanup → validation), ending in `bootc container lint`.
+- Smoke-tested inside the built image ([`.github/scripts/smoke.sh`](.github/scripts/smoke.sh))
+  before anything is pushed.
+- Rechunked with [chunkah](https://github.com/coreos/chunkah) → ~128 layers, so
   `bootc upgrade` pulls small deltas.
 - Cosign-signed by digest ([`cosign.pub`](cosign.pub); `SIGNING_SECRET`).
 - In-image enforcement: [`policy.json`](policy.json) +
-  `registries.d/zen-bootc.yaml` require a valid signature for pulls of this
-  repo only.
-- `bootc container lint` as the final build step.
-- Weekly rebuild (Sat ~18:05 UTC, `--pull=newer`) + path-filtered CI.
+  [`registries.d/zen-bootc.yaml`](registries.d/zen-bootc.yaml) require a valid
+  signature for pulls of this repo only.
+- Weekly rebuild (Sat ~18:05 UTC, `--pull=newer`) plus path-filtered CI.
+- `latest-YYYYMMDD-sha7` tags are immutable rollback anchors.
 - Installer ISO (manual dispatch) → SourceForge. See [`docs/iso.md`](docs/iso.md).
 
 ## Usage
 
 ```bash
-# switch (first install / replace base)
-bootc switch --mutate-in-place --transport registry ghcr.io/codeholic-0/zen-bootc:testing
+# first install / replace base
+bootc switch --mutate-in-place --transport registry ghcr.io/codeholic-0/zen-bootc:latest
 
 # update / rollback
 bootc upgrade
-bootc rollback            # or switch to a dated tag to pin further
+bootc rollback            # or switch to a dated latest- tag to pin further
 
 # verify signature
-cosign verify --key cosign.pub ghcr.io/codeholic-0/zen-bootc:testing
+cosign verify --key cosign.pub ghcr.io/codeholic-0/zen-bootc:latest
 ```
 
-Installer ISO: Actions → "Publish ISO" (role checkboxes), or
-`gh workflow run iso-publish.yaml -f stable=true -f dev=true` — see
-[`docs/iso.md`](docs/iso.md).
+Installer ISO: Actions → "Publish ISO" (one role, no checkboxes), or
+`gh workflow run iso-publish.yaml --ref main` — see [`docs/iso.md`](docs/iso.md).
 
 ## Updates
 
@@ -54,8 +74,9 @@ zen-ctl check            # probe digest + download size; also via /etc/cron.d/ze
 zen-ctl status           # tracking tag + running/staged digest + remote check
 zen-ctl upgrade          # stage an update (manual only)
 zen-ctl upgrade --apply
-zen-ctl switch           # browse stable|testing|dev tags, probe target, confirm → bootc switch
-zen-ctl switch --list   # read-only listing, no elevation
+zen-ctl switch           # browse :latest and dated anchors, probe, confirm → bootc switch
+zen-ctl switch --list    # read-only listing, no elevation
+zen-ctl remove-rollback  # remove the non-booted rollback deployment
 zen-ctl zen-dev          # install/refresh user-local zen-dev (no sudo)
 ```
 
@@ -94,23 +115,29 @@ idea/uv/rust/brew work anywhere, sdkman/nvm abort.
 ## Repo layout
 
 ```
-Containerfile{,.testing,.minimal,.dev} image specs (promote: copy testing->Containerfile)
-policy.json                          signed-ref policy shipped into the image
-registries.d/                        registries.d snippet shipped into the image
-disk_config/iso-kde.toml             bootc-image-builder config for the ISO
-files/                               shipped files (usr/bin/zen-ctl = system CLI + zen-dev bootstrap, cron, drop-ins)
-zen-dev                              user-local dev tooling helper (fetched from raw main, not baked into the image)
-zen-dev-install.sh                   fallback installer one-liner for zen-dev
-docs/iso.md                          ISO build + SourceForge guide
+Containerfile                      single image spec (build_ctx + build_scripts)
+build_scripts/                     grouped install/config/validation steps
+policy.json                        signed-ref policy shipped into the image
+cosign.pub                         public key for signature enforcement
+registries.d/                      registries.d snippet shipped into the image
+disk_config/iso-kde.toml           bootc-image-builder config for the ISO
+files/                             shipped files (zen-ctl, cron, branding, drop-ins)
+zen-dev                            user-local dev tooling helper (fetched from raw main)
+zen-dev-install.sh                 fallback installer one-liner for zen-dev
+docs/iso.md                        ISO build + SourceForge guide
 files/usr/lib/bootc/kargs.d/10-plymouth.toml  boot kernel args
-legacy/nix/                          dormant Nix-era leftovers; image has NO Nix
-.github/workflows/bootc-publish.yaml CI: build -> chunkah rechunk -> push -> sign
-.github/workflows/iso-publish.yaml   CI: role-choice ISO -> SourceForge (manual)
-testing/                             work notes + reference clones (gitignored)
+legacy/nix/                        dormant Nix-era leftovers; image has NO Nix
+.github/workflows/bootc-publish.yaml CI: build → smoke → rechunk → push → sign
+.github/workflows/iso-publish.yaml   CI: manual ISO → SourceForge
+testing/                           work notes + reference clones (gitignored)
+backup branch                      frozen generic multi-variant setup (reference only)
 ```
 
 ## Development loop
 
-1. Edit `Containerfile.testing`, push, CI builds/signs `:testing`.
-2. Test on the machine or via a role-`testing` ISO.
-3. Proven → copy over `Containerfile`, push — that copy is the `stable`/`latest` release.
+1. Edit `Containerfile`, `build_scripts/` or `files/`, push to `main`.
+2. CI builds, smoke-checks, rechunks, signs and publishes `:latest`; install or
+   `bootc upgrade` on the machine to test.
+3. Pin a dated `latest-YYYYMMDD-sha7` anchor if you want to hold a known-good
+   build; `zen-ctl switch` moves between anchors.
+4. For an installer, dispatch "Publish ISO" manually.

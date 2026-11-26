@@ -5,9 +5,6 @@ on:
     branches: [main]
     paths:
       - "Containerfile"
-      - "Containerfile.testing"
-      - "Containerfile.minimal"
-      - "Containerfile.dev"
       - "policy.json"
       - "files/**"
       - "build_scripts/**"
@@ -20,23 +17,6 @@ on:
   schedule:
     - cron: "5 18 * * 6"
   workflow_dispatch:
-    inputs:
-      minimal:
-        description: "Build minimal"
-        type: boolean
-        default: false
-      testing:
-        description: "Build testing"
-        type: boolean
-        default: false
-      final:
-        description: "Build final"
-        type: boolean
-        default: false
-      dev:
-        description: "Build dev"
-        type: boolean
-        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -50,198 +30,70 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
-  changes:
-    # Scheduled builds build everything; push/dispatch filter by paths.
-    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    outputs:
-      minimal: ${{ steps.filter.outputs.minimal }}
-      testing: ${{ steps.filter.outputs.testing }}
-      final: ${{ steps.filter.outputs.final }}
-      dev: ${{ steps.filter.outputs.dev }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Detect changed Containerfiles
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        id: filter
-        with:
-          # !home dropped
-          predicate-quantifier: 'some-with-excludes'
-          filters: |
-            minimal:
-              - 'Containerfile.minimal'
-            testing:
-              - 'Containerfile.testing'
-              - 'policy.json'
-              - 'cosign.pub'
-              - 'registries.d/**'
-              - 'files/**'
-              - "build_scripts/**"
-              - '.github/workflows/bootc-publish.yaml'
-              - '.github/scripts/**'
-            final:
-              - 'Containerfile'
-              - 'policy.json'
-              - 'files/**'
-              - 'cosign.pub'
-              - 'registries.d/**'
-              - '.github/workflows/bootc-publish.yaml'
-              - '.github/scripts/**'
-            # dev tracks stable: stable inputs rebuild dev so its base
-            # never lags the promotion. zen-dev changes ride here too —
-            # the dev job's fetch check validates the raw URL.
-            dev:
-              - 'Containerfile.dev'
-              - 'Containerfile'
-              - 'policy.json'
-              - 'files/**'
-              - 'cosign.pub'
-              - 'registries.d/**'
-              - '.github/workflows/bootc-publish.yaml'
-              - '.github/scripts/**'
-
-  # One matrix job for all three flavors; per-flavor logic is matrix data.
   build:
-    name: Build ${{ matrix.flavor.role }}
-    needs: changes
+    name: Build OS
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        flavor:
-          - role: minimal
-            dockerfile: Containerfile.minimal
-            tag: minimal-latest
-            dtag_prefix: minimal
-            extra_tags: ""
-            smoke: 'false'
-          - role: testing
-            dockerfile: Containerfile.testing
-            tag: testing
-            dtag_prefix: testing
-            extra_tags: ""
-            smoke: 'true'
-          - role: final
-            dockerfile: Containerfile
-            tag: stable
-            dtag_prefix: stable
-            # stable and latest are the same image; one extra ref, not an extra build
-            extra_tags: "latest"
-            smoke: 'true'
     steps:
-      - name: Decide whether to run
-        # Job-level `if` can't see matrix context: the gate lives in a step
-        # and runs FIRST so skipped flavors pay for nothing.
-        id: gate
-        env:
-          ROLE: ${{ matrix.flavor.role }}
-          CH_MINIMAL: ${{ needs.changes.outputs.minimal }}
-          CH_TESTING: ${{ needs.changes.outputs.testing }}
-          CH_FINAL: ${{ needs.changes.outputs.final }}
-          IN_MINIMAL: ${{ github.event.inputs.minimal }}
-          IN_TESTING: ${{ github.event.inputs.testing }}
-          IN_FINAL: ${{ github.event.inputs.final }}
-        run: |
-          CHANGED_VAR="CH_${ROLE^^}"
-          IN_VAR="IN_${ROLE^^}"
-          CHANGED="${!CHANGED_VAR}"
-          TOGGLED="${!IN_VAR}"
-          case "${GITHUB_EVENT_NAME}" in
-            schedule)          SHOULD_RUN=true ;;
-            push)              [[ "${CHANGED}" == "true" ]] && SHOULD_RUN=true ;;
-            workflow_dispatch) [[ "${TOGGLED}" == "true" ]] && SHOULD_RUN=true ;;
-          esac
-          echo "SHOULD_RUN=${SHOULD_RUN:-false}" >> "$GITHUB_ENV"
-
       - name: Maximize build space
         # Rechunking copies the full image; prune the runner first.
-        if: env.SHOULD_RUN == 'true'
         uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
 
       - name: Checkout code
-        if: env.SHOULD_RUN == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install podman
-        if: env.SHOULD_RUN == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y podman
 
       - name: Log in to GHCR
         # Built-in GITHUB_TOKEN, no PAT.
-        if: env.SHOULD_RUN == 'true'
         run: |
           IMAGE="${IMAGE,,}"
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build image
-        if: env.SHOULD_RUN == 'true'
-        env:
-          DOCKERFILE: ${{ matrix.flavor.dockerfile }}
-          TAG: ${{ matrix.flavor.tag }}
-          EXTRA_TAGS: ${{ matrix.flavor.extra_tags }}
         run: |
           IMAGE="${IMAGE,,}"
           # --pull=newer is what makes the weekly schedule track base updates.
-          TAG_ARGS=()
-          for extra in ${EXTRA_TAGS}; do
-            TAG_ARGS+=(-t "$IMAGE:$extra")
-          done
-          podman build --pull=newer -f "$DOCKERFILE" -t "$IMAGE:$TAG" "${TAG_ARGS[@]}" .
-          # Immutable rollback anchor: <prefix>-<UTC date>-<commit sha7>.
-          echo "DTAG=$IMAGE:${{ matrix.flavor.dtag_prefix }}-$(date -u +%Y%m%d)-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          podman build --pull=newer -f Containerfile -t "$IMAGE:latest" .
+          # Immutable rollback anchor: latest-<UTC date>-<commit sha7>.
+          echo "DTAG=$IMAGE:latest-$(date -u +%Y%m%d)-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
 
       - name: Smoke-check image
         # Runs the assembled image (the artifact that gets pushed+signed) and
         # asserts invariants before rechunk: branding, zen-ctl wiring,
-        # signature policy, shipped files. minimal excluded (stagnant flavor).
-        # Checks live in .github/scripts/smoke.sh (shared with the dev job) and
-        # are fed on stdin so they are not baked into the image. The script
-        # prints "ok:"/"FAIL: <desc>" per assertion and traces the failing
-        # command, so a broken invariant names itself in the log.
-        if: env.SHOULD_RUN == 'true' && matrix.flavor.smoke == 'true'
-        env:
-          TAG: ${{ matrix.flavor.tag }}
-          ROLE: ${{ matrix.flavor.role }}
+        # signature policy, shipped files. Checks live in
+        # .github/scripts/smoke.sh and are fed on stdin so they are not baked
+        # into the image. The script prints "ok:"/"FAIL: <desc>" per assertion
+        # and traces the failing command, so a broken invariant names itself.
         run: |
           set -euo pipefail
           IMAGE="${IMAGE,,}"
-          podman run --rm -i "$IMAGE:$TAG" /bin/bash -s -- "$ROLE" \
-            < .github/scripts/smoke.sh
+          podman run --rm -i "$IMAGE:latest" /bin/bash -s < .github/scripts/smoke.sh
 
       - name: zen-dev fetch check (user-local, not baked)
-        # zen-dev lives in $HOME, not the image; CI validates the raw URL
-        # parses. Cheap; repeats per leg when the matrix runs multiple.
-        if: env.SHOULD_RUN == 'true' && matrix.flavor.smoke == 'true'
+        # zen-dev lives in $HOME, not the image; CI validates the raw URL parses.
         run: |
           set -euo pipefail
           curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev | bash -n
           echo "zen-dev raw fetch parses OK"
 
       - name: Rechunk image (small delta updates)
-        if: env.SHOULD_RUN == 'true'
-        env:
-          TAG: ${{ matrix.flavor.tag }}
-          EXTRA_TAGS: ${{ matrix.flavor.extra_tags }}
         run: |
           set -euox pipefail
           IMAGE="${IMAGE,,}"
           CHUNKAH_CONFIG_FILE="$(mktemp)"
           CHUNKAH_OUTPUT_DIR="$(mktemp -d "$RUNNER_TEMP"/zen-bootc-chunkah-XXXXXX)"
-          podman inspect "$IMAGE:$TAG" > "$CHUNKAH_CONFIG_FILE"
+          podman inspect "$IMAGE:latest" > "$CHUNKAH_CONFIG_FILE"
 
           podman run --rm \
-            --mount=type=image,src="$IMAGE:$TAG",target=/chunkah \
+            --mount=type=image,src="$IMAGE:latest",target=/chunkah \
             -v "$CHUNKAH_CONFIG_FILE:/chunkah-config.json:ro,Z" \
             -v "$CHUNKAH_OUTPUT_DIR:/run/out:Z" \
             "$RECHUNK_IMAGE" \
@@ -254,26 +106,15 @@ jobs:
             --config /chunkah-config.json \
             --output oci:/run/out/chunked
 
-          # Re-point ALL local tags onto the chunked image
+          # Re-point both local tags onto the chunked image.
           CHUNKED_IMAGE="$(podman pull "oci:${CHUNKAH_OUTPUT_DIR}/chunked")"
-          podman untag "$IMAGE:$TAG" || true
-          TAG_CHUNKED=("$IMAGE:$TAG" "$DTAG")
-          for extra in ${EXTRA_TAGS}; do
-            TAG_CHUNKED+=("$IMAGE:$extra")
-          done
-          podman tag "$CHUNKED_IMAGE" "${TAG_CHUNKED[@]}"
+          podman untag "$IMAGE:latest" || true
+          podman tag "$CHUNKED_IMAGE" "$IMAGE:latest" "$DTAG"
 
       - name: Push image
-        if: env.SHOULD_RUN == 'true'
-        env:
-          TAG: ${{ matrix.flavor.tag }}
-          EXTRA_TAGS: ${{ matrix.flavor.extra_tags }}
         run: |
           IMAGE="${IMAGE,,}"
-          REFS="$IMAGE:$TAG"
-          for extra in ${EXTRA_TAGS}; do REFS="$REFS $IMAGE:$extra"; done
-          REFS="$REFS $DTAG"
-          for ref in $REFS; do
+          for ref in "$IMAGE:latest" "$DTAG"; do
             # First push uploads fresh blobs but DROPS chunkah layer
             # annotations (podman #27796) -> digest differs. The second push
             # converges every ref onto the annotated digest; sign THAT.
@@ -282,19 +123,16 @@ jobs:
           done
 
       - name: Install Cosign
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
         with:
           cosign-release: 'v3.1.4'
 
       - name: Log in to GHCR (docker client, for cosign)
         # cosign uses its own credential chain, not podman's authfile.
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Sign image
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
         run: |
@@ -304,154 +142,11 @@ jobs:
             --key env://COSIGN_PRIVATE_KEY "$IMAGE@$(cat /tmp/digestfile)"
 
       - name: Verify signature (self-check)
-        # Verify BY TAG: the tag's registry digest must be the signed one
+        # Verify BY TAG: each tag's registry digest must be the signed one
         # (podman #27796 class of divergence). No Rekor entry on key-based
         # signs, hence --insecure-ignore-tlog.
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
-        env:
-          TAG: ${{ matrix.flavor.tag }}
-          EXTRA_TAGS: ${{ matrix.flavor.extra_tags }}
         run: |
           IMAGE="${IMAGE,,}"
-          REFS="$IMAGE:$TAG"
-          for extra in ${EXTRA_TAGS}; do REFS="$REFS $IMAGE:$extra"; done
-          REFS="$REFS $DTAG"
-          for ref in $REFS; do
-            cosign verify --key cosign.pub --insecure-ignore-tlog "$ref"
-          done
-
-  # Dev flavor builds AFTER the matrix job: Containerfile.dev FROMs the
-  # pushed :stable tag, so the fresh promotion must be in the registry
-  # before this runs.
-  dev:
-    name: Build dev
-    needs: [changes, build]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Decide whether to run
-        id: gate
-        env:
-          CHANGED: ${{ needs.changes.outputs.dev }}
-          TOGGLED: ${{ github.event.inputs.dev }}
-        run: |
-          case "${GITHUB_EVENT_NAME}" in
-            schedule)          SHOULD_RUN=true ;;
-            push)              [[ "${CHANGED}" == "true" ]] && SHOULD_RUN=true ;;
-            workflow_dispatch) [[ "${TOGGLED}" == "true" ]] && SHOULD_RUN=true ;;
-          esac
-          echo "SHOULD_RUN=${SHOULD_RUN:-false}" >> "$GITHUB_ENV"
-
-      - name: Maximize build space
-        if: env.SHOULD_RUN == 'true'
-        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
-
-      - name: Checkout code
-        if: env.SHOULD_RUN == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install podman
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
-
-      - name: Log in to GHCR
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          IMAGE="${IMAGE,,}"
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Build image
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          IMAGE="${IMAGE,,}"
-          # Base tag is the just-pushed :stable (see job comment).
-          podman build --pull=newer -f Containerfile.dev -t "$IMAGE:dev" .
-          echo "DTAG=$IMAGE:dev-$(date -u +%Y%m%d)-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
-
-      - name: Smoke-check image
-        # Base asserts (inherited from :stable) + the dev layer: toolchain,
-        # VSCodium. zen-dev is NOT baked (user-local on all flavors).
-        # Checks live in .github/scripts/smoke.sh; ROLE=dev adds toolchain checks.
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          set -euo pipefail
-          IMAGE="${IMAGE,,}"
-          podman run --rm -i "$IMAGE:dev" /bin/bash -s -- dev \
-            < .github/scripts/smoke.sh
-
-      - name: zen-dev fetch check (user-local, not baked)
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          set -euo pipefail
-          curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev | bash -n
-          echo "zen-dev raw fetch parses OK"
-
-      - name: Rechunk image (small delta updates)
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          set -euox pipefail
-          IMAGE="${IMAGE,,}"
-          CHUNKAH_CONFIG_FILE="$(mktemp)"
-          CHUNKAH_OUTPUT_DIR="$(mktemp -d "$RUNNER_TEMP"/zen-bootc-chunkah-XXXXXX)"
-          podman inspect "$IMAGE:dev" > "$CHUNKAH_CONFIG_FILE"
-
-          podman run --rm \
-            --mount=type=image,src="$IMAGE:dev",target=/chunkah \
-            -v "$CHUNKAH_CONFIG_FILE:/chunkah-config.json:ro,Z" \
-            -v "$CHUNKAH_OUTPUT_DIR:/run/out:Z" \
-            "$RECHUNK_IMAGE" \
-            build \
-            --verbose \
-            --compressed \
-            --max-layers 128 \
-            --prune /sysroot/ \
-            --label ostree.commit- --label ostree.final-diffid- \
-            --config /chunkah-config.json \
-            --output oci:/run/out/chunked
-
-          CHUNKED_IMAGE="$(podman pull "oci:${CHUNKAH_OUTPUT_DIR}/chunked")"
-          podman untag "$IMAGE:dev" || true
-          podman tag "$CHUNKED_IMAGE" "$IMAGE:dev" "$DTAG"
-
-      - name: Push image
-        if: env.SHOULD_RUN == 'true'
-        run: |
-          IMAGE="${IMAGE,,}"
-          for ref in "$IMAGE:dev" "$DTAG"; do
-            podman push "$ref"
-            podman push --digestfile=/tmp/digestfile "$ref"
-          done
-
-      - name: Install Cosign
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
-        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
-        with:
-          cosign-release: 'v3.1.4'
-
-      - name: Log in to GHCR (docker client, for cosign)
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Sign image
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
-        run: |
-          IMAGE="${IMAGE,,}"
-          cosign sign -y --new-bundle-format=false --use-signing-config=false \
-            --key env://COSIGN_PRIVATE_KEY "$IMAGE@$(cat /tmp/digestfile)"
-
-      - name: Verify signature (self-check)
-        if: env.SHOULD_RUN == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          IMAGE="${IMAGE,,}"
-          for ref in "$IMAGE:dev" "$DTAG"; do
+          for ref in "$IMAGE:latest" "$DTAG"; do
             cosign verify --key cosign.pub --insecure-ignore-tlog "$ref"
           done

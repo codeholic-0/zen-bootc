@@ -7,7 +7,7 @@ log_group "$(basename "$0")"
 
 test "$(readlink /etc/os-release)" = "../usr/lib/os-release"
 
-for pkg in docker-ce podman flatpak distrobox kate vlc zsh jq curl bootc ffmpeg; do
+for pkg in docker-ce podman flatpak distrobox kate vlc zsh jq curl bootc ffmpeg codium helium-bin librewolf; do
     rpm -q "$pkg" >/dev/null || { echo "missing package: $pkg" >&2; exit 1; }
 done
 
