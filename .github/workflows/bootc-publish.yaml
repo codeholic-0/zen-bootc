@@ -19,7 +19,6 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
   IMAGE: ghcr.io/${{ github.repository_owner }}/zen-bootc
   # Distro-agnostic rechunker; pinned by digest, bump deliberately.
   RECHUNK_IMAGE: quay.io/coreos/chunkah@sha256:71e593421c5de7dcc7c8c5c50e98d3bac572055a76f399f61a491d123c20a523

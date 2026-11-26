@@ -1,7 +1,8 @@
 name: GHCR Cleanup
 
 on:
-  # Run after the Saturday image builds.
+  # Sunday 18:05 UTC — day after the Saturday image build, so cleanup
+  # never races a rebuild.
   schedule:
     - cron: "5 18 * * 0"
 

@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
   IMAGE: ghcr.io/${{ github.repository_owner }}/zen-bootc
   SF_PROJECT: zen-bootc
 
@@ -22,6 +21,7 @@ jobs:
     # 26.04 runners load bwrap-userns-restrict (AppArmor): osbuild's sandbox
     # breaks. Runner pinned to 24.04 deliberately.
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
