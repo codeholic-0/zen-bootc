@@ -27,7 +27,7 @@ RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
 # Plymouth boot splash 
 # kargs side lives in files/usr/lib/bootc/kargs.d/10-plymouth.toml (rhgb quiet).
 COPY files/usr/lib/bootc/kargs.d/10-plymouth.toml /usr/lib/bootc/kargs.d/10-plymouth.toml
-RUN plymouth-set-default-theme breeze
+RUN plymouth-set-default-theme -R breeze
 
 # Custom Fetch Logo
 COPY files/etc/fastfetch/config.jsonc /etc/fastfetch/config.jsonc

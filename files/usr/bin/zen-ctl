@@ -65,14 +65,30 @@ cmd_check() {
 cmd_status() {
     for_sub status "$@"
     local sj d1 v1 tag d2 out d3 v2 size
+    local rollback_digest rollback_version rollback_tag
     sj=$(bootc status --json 2>/dev/null)
     d1=$(printf '%s' "$sj" | dig '.status.booted.image.imageDigest')
     v1=$(printf '%s' "$sj" | dig '.status.booted.image.version')
     tag=$(printf '%s' "$sj" | dig '.status.booted.image.image.image')
     d2=$(printf '%s' "$sj" | dig '.status.staged.image.imageDigest')
-    echo "tracked: ${tag:-unknown}"
-    echo "running: ${v1:-?} ${d1:-unknown}"
-    if [ -n "$d2" ] && [ "$d2" != "null" ]; then echo "staged:  $d2"; else echo "staged:  none"; fi
+    rollback_digest=$(printf '%s' "$sj" | dig '.status.rollback.image.imageDigest')
+    rollback_version=$(printf '%s' "$sj" | dig '.status.rollback.image.version')
+    rollback_tag=$(printf '%s' "$sj" | dig '.status.rollback.image.image.image')
+
+    echo "tracked:  ${tag:-unknown}"
+    echo "running:  ${v1:-?} ${d1:-unknown}"
+    if [ -n "$d2" ] && [ "$d2" != "null" ]; then
+        echo "staged:   $d2"
+    else
+        echo "staged:   none"
+    fi
+    if [ -n "$rollback_digest" ] && [ "$rollback_digest" != "null" ]; then
+        echo "rollback: ${rollback_tag:-unknown}"
+        echo "          ${rollback_version:-?} ${rollback_digest}"
+    else
+        echo "rollback: none"
+    fi
+
     out=$(bootc upgrade --check 2>/dev/null) || { echo "remote:  check failed"; return 2; }
     if [ -z "$out" ] || printf '%s' "$out" | grep -q '^No changes in:'; then
         echo "remote:  up to date"
@@ -91,6 +107,142 @@ cmd_status() {
     [ -n "${size:-}" ] && echo "         size: ${size}"
     save_state "$(date -Is) available ${d3:-?} ${v2:-?} ${size:-?}"
     return 1
+}
+
+cmd_remove_rollback() {
+    [ "$#" -eq 0 ] || { echo "usage: zen-ctl remove-rollback" >&2; return 2; }
+    for_sub remove-rollback "$@"
+
+    command -v ostree >/dev/null 2>&1 || {
+        echo "zen-ctl: ostree is required" >&2
+        return 1
+    }
+    command -v bootc >/dev/null 2>&1 || {
+        echo "zen-ctl: bootc is required" >&2
+        return 1
+    }
+    command -v jq >/dev/null 2>&1 || {
+        echo "zen-ctl: jq is required" >&2
+        return 1
+    }
+
+    local ostree_json bootc_json rollback_count rollback_json
+    local rollback_index checksum bootc_checksum version image_ref image_digest
+    local ans verify_ostree verify_bootc
+
+    ostree_json=$(ostree admin status --json 2>&1) || {
+        echo "zen-ctl: could not read OSTree deployment status:" >&2
+        printf '%s\n' "$ostree_json" >&2
+        return 1
+    }
+    bootc_json=$(bootc status --json 2>&1) || {
+        echo "zen-ctl: could not read bootc status:" >&2
+        printf '%s\n' "$bootc_json" >&2
+        return 1
+    }
+
+    rollback_count=$(printf '%s' "$ostree_json" |
+        jq '[.deployments[] | select(.rollback == true)] | length' 2>/dev/null) || {
+        echo "zen-ctl: could not parse OSTree deployment status JSON" >&2
+        return 1
+    }
+
+    if [ "$rollback_count" -eq 0 ]; then
+        echo "zen-ctl: no rollback deployment found"
+        return 0
+    fi
+    if [ "$rollback_count" -ne 1 ]; then
+        echo "zen-ctl: expected one rollback deployment, found $rollback_count; refusing to remove anything" >&2
+        return 1
+    fi
+
+    rollback_json=$(printf '%s' "$ostree_json" |
+        jq -c '[.deployments[] | select(.rollback == true)][0]' 2>/dev/null) || {
+        echo "zen-ctl: could not read rollback deployment details" >&2
+        return 1
+    }
+
+    rollback_index=$(printf '%s' "$rollback_json" | jq -r '.index // empty')
+    checksum=$(printf '%s' "$rollback_json" | jq -r '.checksum // empty')
+    case "$rollback_index" in
+        ''|*[!0-9]*)
+            echo "zen-ctl: rollback deployment has an invalid index; refusing to remove anything" >&2
+            return 1
+            ;;
+    esac
+    if [ -z "$checksum" ]; then
+        echo "zen-ctl: rollback deployment has no checksum; refusing to remove anything" >&2
+        return 1
+    fi
+
+    bootc_checksum=$(printf '%s' "$bootc_json" |
+        jq -r '.status.rollback.ostree.checksum // empty' 2>/dev/null) || bootc_checksum=""
+    version=$(printf '%s' "$bootc_json" |
+        jq -r '.status.rollback.image.version // "unknown"' 2>/dev/null) || version="unknown"
+    image_ref=$(printf '%s' "$bootc_json" |
+        jq -r '.status.rollback.image.image.image // "unknown"' 2>/dev/null) || image_ref="unknown"
+    image_digest=$(printf '%s' "$bootc_json" |
+        jq -r '.status.rollback.image.imageDigest // "unknown"' 2>/dev/null) || image_digest="unknown"
+
+    if [ -n "$bootc_checksum" ] && [ "$bootc_checksum" != "$checksum" ]; then
+        echo "zen-ctl: bootc and OSTree disagree about which deployment is rollback; refusing to remove anything" >&2
+        echo "  bootc checksum:  $bootc_checksum" >&2
+        echo "  OSTree checksum: $checksum" >&2
+        return 1
+    fi
+
+    echo "Rollback deployment to remove:"
+    echo "  index:    $rollback_index"
+    echo "  image:    $image_ref"
+    echo "  version:  $version"
+    echo "  digest:   $image_digest"
+    echo "  checksum: $checksum"
+    echo
+    echo "This permanently removes the rollback deployment. You will no longer"
+    echo "be able to boot back into it."
+    printf 'Remove this rollback deployment? [y/N] '
+    read -r ans
+    case "$ans" in
+        [yY]|[yY][eE][sS]) ;;
+        *) echo "zen-ctl: canceled"; return 0 ;;
+    esac
+
+    # Re-read both sources before acting: deployment indexes can change.
+    # Require the same OSTree checksum at the same index, still marked rollback
+    # and not booted. If bootc has an OSTree checksum, require it to match too.
+    ostree_json=$(ostree admin status --json 2>&1) || {
+        echo "zen-ctl: could not re-read OSTree deployment status:" >&2
+        printf '%s\n' "$ostree_json" >&2
+        return 1
+    }
+    verify_ostree=$(printf '%s' "$ostree_json" |
+        jq -c --argjson idx "$rollback_index" --arg checksum "$checksum" \
+            '.deployments[] | select(.index == $idx and .rollback == true and .booted != true and .checksum == $checksum)' \
+            2>/dev/null) || verify_ostree=""
+    if [ -z "$verify_ostree" ]; then
+        echo "zen-ctl: rollback deployment changed since confirmation; refusing to remove anything" >&2
+        return 1
+    fi
+
+    bootc_json=$(bootc status --json 2>&1) || {
+        echo "zen-ctl: could not re-read bootc status:" >&2
+        printf '%s\n' "$bootc_json" >&2
+        return 1
+    }
+    verify_bootc=$(printf '%s' "$bootc_json" |
+        jq -r '.status.rollback.ostree.checksum // empty' 2>/dev/null) || verify_bootc=""
+    if [ -n "$verify_bootc" ] && [ "$verify_bootc" != "$checksum" ]; then
+        echo "zen-ctl: bootc rollback deployment changed since confirmation; refusing to remove anything" >&2
+        return 1
+    fi
+
+    if ! ostree admin undeploy "$rollback_index"; then
+        echo "zen-ctl: failed to remove rollback deployment at index $rollback_index" >&2
+        return 1
+    fi
+
+    logger -t zen-ctl "removed rollback deployment index=$rollback_index checksum=$checksum"
+    echo "zen-ctl: rollback deployment removed"
 }
 
 cmd_upgrade() {
@@ -210,21 +362,23 @@ cmd_zen_dev() {
 }
 
 case "${1:-}" in
-    check)   shift; cmd_check "$@" ;;
-    status)  shift; cmd_status "$@" ;;
-    upgrade) shift; cmd_upgrade "$@" ;;
-    switch)  shift; cmd_switch  "$@" ;;
-    zen-dev) shift; cmd_zen_dev "$@" ;;
+    check)           shift; cmd_check "$@" ;;
+    status)          shift; cmd_status "$@" ;;
+    remove-rollback) shift; cmd_remove_rollback "$@" ;;
+    upgrade)         shift; cmd_upgrade "$@" ;;
+    switch)          shift; cmd_switch "$@" ;;
+    zen-dev)         shift; cmd_zen_dev "$@" ;;
     help|-h|--help|"")
-        echo "usage: zen-ctl check | status | upgrade [--apply] | switch [--list|<tag>] | zen-dev"
-        echo "  check    probe upstream; shows download size; rc1 = update available"
-        echo "  status   running/staged digest + live remote check"
-        echo "  upgrade  stage an update (never automatic); --apply reboots into it"
-        echo "  switch   roll the machine to a stable|testing|dev tag (browse latest"
-        echo "           per flavor, probe target, explicit confirm; --list is"
-        echo "           read-only, no elevation)"
-        echo "  zen-dev  install/refresh user-local zen-dev into ~/.local/bin"
-        echo "           (raw main, sanity-checked; never uses sudo or touches /usr)"
+        echo "usage: zen-ctl check | status | remove-rollback | upgrade [--apply] | switch [--list|<tag>] | zen-dev"
+        echo "  check           probe upstream; shows download size; rc1 = update available"
+        echo "  status          running/staged/rollback image details + live remote check"
+        echo "  remove-rollback remove the non-booted rollback deployment permanently"
+        echo "  upgrade         stage an update (never automatic); --apply reboots into it"
+        echo "  switch          roll the machine to a stable|testing|dev tag (browse latest"
+        echo "                  per flavor, probe target, explicit confirm; --list is"
+        echo "                  read-only, no elevation)"
+        echo "  zen-dev         install/refresh user-local zen-dev into ~/.local/bin"
+        echo "                  (raw main, sanity-checked; never uses sudo or touches /usr)"
         echo "Sudo is prompted automatically for system commands; cron runs check as"
         echo "root weekly (Sat 22:00). zen-dev is unsigned user tooling by design." ;;
     *) echo "zen-ctl: unknown subcommand '$1'" >&2; exit 2 ;;
