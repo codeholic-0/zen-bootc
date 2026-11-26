@@ -10,6 +10,7 @@ on:
       - "Containerfile.dev"
       - "policy.json"
       - "files/**"
+      - "build_scripts/**"
       - ".github/workflows/bootc-publish.yaml"
       - ".github/scripts/**"
       - "cosign.pub"
@@ -81,6 +82,7 @@ jobs:
               - 'cosign.pub'
               - 'registries.d/**'
               - 'files/**'
+              - "build_scripts/**"
               - '!files/home/**'
               - '.github/scripts/**'
             final:
