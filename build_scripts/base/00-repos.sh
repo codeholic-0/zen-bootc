@@ -11,7 +11,7 @@ dnf install -y \
     "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VER}.noarch.rpm" \
     "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VER}.noarch.rpm"
 
-dnf config-manager addrepo \
+dnf config-manager addrepo --overwrite \
     --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
 
 

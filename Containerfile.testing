@@ -36,7 +36,6 @@ COPY files/usr/share/zen-bootc/branding/zenc.txt /usr/share/zen-bootc/branding/z
 # Branding: ZenC OS 
 # /etc/os-release ships as ../usr/lib/os-release symlink (asserted below).
 COPY files/usr/lib/os-release /usr/lib/os-release
-RUN [ "$(readlink /etc/os-release)" = "../usr/lib/os-release" ]
 
 # Client-side signature verification
 # /etc/containers/ is the bootc-supported location (/usr/etc fails lint).

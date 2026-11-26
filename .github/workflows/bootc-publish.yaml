@@ -84,6 +84,7 @@ jobs:
               - 'files/**'
               - "build_scripts/**"
               - '!files/home/**'
+              - '.github/workflows/bootc-publish.yaml'
               - '.github/scripts/**'
             final:
               - 'Containerfile'

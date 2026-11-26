@@ -11,6 +11,6 @@ if [ "${base_ver}" != "${FEDORA_VER:-}" ]; then
     exit 1
 fi
 
-dnf -y install dnf-plugins-core dnf5-plugins
+dnf -y install dnf5-plugins
 
 log_group_end

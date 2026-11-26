@@ -54,7 +54,7 @@ dnf_install \
     git \
     curl \
     wget2 \
-    wget2-wget\
+    wget2-wget \
     jq \
     distrobox \
     btop \
