@@ -69,9 +69,7 @@ jobs:
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
-          # 'some-with-excludes' is required: under the default 'some',
-          # negated rules INVERT-match (any file outside files/home/**),
-          # so !files/home/** would catch-all every unrelated push.
+          # !home dropped
           predicate-quantifier: 'some-with-excludes'
           filters: |
             minimal:
@@ -83,14 +81,12 @@ jobs:
               - 'registries.d/**'
               - 'files/**'
               - "build_scripts/**"
-              - '!files/home/**'
               - '.github/workflows/bootc-publish.yaml'
               - '.github/scripts/**'
             final:
               - 'Containerfile'
               - 'policy.json'
               - 'files/**'
-              - '!files/home/**'
               - 'cosign.pub'
               - 'registries.d/**'
               - '.github/workflows/bootc-publish.yaml'
@@ -103,7 +99,6 @@ jobs:
               - 'Containerfile'
               - 'policy.json'
               - 'files/**'
-              - '!files/home/**'
               - 'cosign.pub'
               - 'registries.d/**'
               - '.github/workflows/bootc-publish.yaml'
@@ -230,7 +225,7 @@ jobs:
         if: env.SHOULD_RUN == 'true' && matrix.flavor.smoke == 'true'
         run: |
           set -euo pipefail
-          curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev | bash -n
+          curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev | bash -n
           echo "zen-dev raw fetch parses OK"
 
       - name: Rechunk image (small delta updates)
@@ -394,7 +389,7 @@ jobs:
         if: env.SHOULD_RUN == 'true'
         run: |
           set -euo pipefail
-          curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev | bash -n
+          curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev | bash -n
           echo "zen-dev raw fetch parses OK"
 
       - name: Rechunk image (small delta updates)

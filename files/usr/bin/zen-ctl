@@ -8,7 +8,7 @@ set -u
 STATE_DIR=/var/lib/zen-ctl
 REPO=ghcr.io/codeholic-0/zen-bootc
 SELF=$(readlink -f "$0")
-ZEN_DEV_RAW=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev
+ZEN_DEV_RAW=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev
 dig() { jq -r "$1" 2>/dev/null; }
 
 # Self-elevate once: bare `zen-ctl …` prompts for sudo, root/cron pass through.

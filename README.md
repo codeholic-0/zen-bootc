@@ -73,7 +73,7 @@ Fallback one-liner:
 ```bash
 zen-ctl zen-dev
 # fallback:
-curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev-install.sh | bash
 ```
 
 ```bash
@@ -98,7 +98,9 @@ Containerfile{,.testing,.minimal,.dev} image specs (promote: copy testing->Conta
 policy.json                          signed-ref policy shipped into the image
 registries.d/                        registries.d snippet shipped into the image
 disk_config/iso-kde.toml             bootc-image-builder config for the ISO
-files/                               shipped files (usr/bin/zen-ctl = system CLI + zen-dev bootstrap, cron, drop-ins; home/.local/bin/zen-dev = user-local tool)
+files/                               shipped files (usr/bin/zen-ctl = system CLI + zen-dev bootstrap, cron, drop-ins)
+zen-dev                              user-local dev tooling helper (fetched from raw main, not baked into the image)
+zen-dev-install.sh                   fallback installer one-liner for zen-dev
 docs/iso.md                          ISO build + SourceForge guide
 files/usr/lib/bootc/kargs.d/10-plymouth.toml  boot kernel args
 legacy/nix/                          dormant Nix-era leftovers; image has NO Nix

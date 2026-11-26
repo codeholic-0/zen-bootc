@@ -22,7 +22,7 @@ esac
 bootc switch --mutate-in-place --transport registry "$ref"
 flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak remote-modify --system --enable flathub
-zd_url=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev
+zd_url=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev
 tmp=$(mktemp)
 if curl -fsSL "$zd_url" -o "$tmp" && bash -n "$tmp" 2>/dev/null && grep -q '^# zen-dev' "$tmp"; then
   for home in /home/*; do

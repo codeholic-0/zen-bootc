@@ -6,7 +6,7 @@
 # rc edits are idempotent and only made for bash/zsh login shells.
 set -u
 
-ZEN_DEV_RAW="https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/files/home/.local/bin/zen-dev"
+ZEN_DEV_RAW="https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev"
 
 NVM_API="https://api.github.com/repos/nvm-sh/nvm/releases/latest"
 # NOTE: releases/latest is wrong here — JetBrains ships pycharm/etc. from the
