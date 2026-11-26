@@ -14,7 +14,6 @@ dnf install -y \
 dnf config-manager addrepo \
     --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
 
-dnf copr enable imput/helium -y
 
 dnf config-manager setopt \
     'rpmfusion-free.enabled=1' \
@@ -28,7 +27,7 @@ dnf install -y --refresh \
     rpmfusion-free-release-tainted \
     rpmfusion-nonfree-release-tainted
 
-dnf makecache
+dnf makecache --refresh
 
 # bootc-image-builder reads repositories from /etc/yum.repos.d.
 if compgen -G '/usr/share/dnf5/repos.d/*.repo' >/dev/null; then

@@ -24,7 +24,7 @@ require_command() {
 }
 
 dnf_install() {
-    dnf -y install --refresh "$@"
+    dnf -y install "$@"
 }
 
 dnf_remove() {
