@@ -18,6 +18,7 @@ KDE_REMOVE=(
     plasma-welcome
     plasma-welcome-fedora
     xwaylandvideobridge
+    plasma-systemmonitor
     kwrite
     krfb
 )
@@ -29,7 +30,6 @@ DEV_DEPS=(
     # Compilers & build tools
     gcc
     gcc-c++
-    clang
     automake
     autoconf
     make
@@ -42,11 +42,6 @@ DEV_DEPS=(
     neovim
     codium
     kate
-
-    # Verilog
-    iverilog
-    verilator
-    gtkwave
 
     # Version control
     git
@@ -78,7 +73,6 @@ SHELL_UTILS=(
     # Web Fetch
     curl
     wget2
-    wget2-wget
 
     # Search & navigation
     fzf
@@ -138,7 +132,6 @@ DESKTOP_APPS=(
     # Desktop utilities
     zenity
     mediawriter
-    persepolis
 )
 
 REPOSITORIES=(
@@ -156,5 +149,7 @@ dnf_install \
     "${SYSTEM_UTILS[@]}" \
     "${DESKTOP_APPS[@]}" \
     "${REPOSITORIES[@]}"
+
+dnf -y install --exclude=gedit iverilog verilator gtkwave
 
 log_group_end

@@ -10,29 +10,6 @@ branch. That branch is a reference snapshot, not an actively maintained image.
 
 Published at: `ghcr.io/codeholic-0/zen-bootc`
 
-## What's in the image
-
-- **Base:** Fedora 45 Kinoite (KDE Plasma), rebranded as ZenC OS.
-- **Debloated:** Firefox, Akonadi, Plasma Discover/Welcome, KWrite, KRfb and
-  XwaylandVideoBridge are removed.
-- **Multimedia:** `@multimedia` plus RPM Fusion `ffmpeg` (with tainted repos
-  enabled), VLC, yt-dlp, gthumb, guvcview, media writer, and a Breeze Plymouth
-  splash.
-- **Browsers & desktop apps:** Persepolis, Kate, Zenity.
-- **Dev toolchain (baked in):** gcc/g++, clang, gdb, make/cmake, autotools,
-  VSCodium, Neovim, git/git-lfs/gh, jq/yq/sqlite, shellcheck, and Verilog tools
-  (iverilog, verilator, gtkwave).
-- **Shell & CLI:** zsh, bat, eza, fd, fzf, zoxide, btop, fastfetch, lm_sensors,
-  smem, dos2unix, plocate, distrobox.
-- **Containers & storage:** Docker CE (compose/buildx plugins), Podman,
-  podman-compose, Flatpak/Flathub, Btrfs tools, cryfs, scrub.
-- **Services & tuning:** NetworkManager, KDE login (`plasmalogin`), Docker, earlyoom and
-  cron enabled; `NetworkManager-wait-online` disabled/masked.
-- **Transport security:** images are cosign-signed; in-image policy enforces
-  valid signatures for this repo only.
-- No Nix — `legacy/nix/` is dormant history. Optional user-local tooling lives
-  in `zen-dev`, never in `/usr`.
-
 ## Pipeline
 
 - Built from one [`Containerfile`](Containerfile) whose steps live in
@@ -132,7 +109,6 @@ legacy/nix/                        dormant Nix-era leftovers; image has NO Nix
 .github/workflows/bootc-publish.yaml CI: build → smoke → rechunk → push → sign
 .github/workflows/iso-publish.yaml   CI: manual ISO → SourceForge
 .github/workflows/cleanup-ghcr.yaml  CI: retain :latest + 5 dated anchors (weekly)
-testing/                           work notes + reference clones (gitignored)
 backup branch                      frozen generic multi-variant setup (reference only)
 ```
 
