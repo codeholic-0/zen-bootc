@@ -11,6 +11,7 @@ rm -rf \
     /var/log/dnf5.log* \
     /var/lib/dnf \
     /var/lib/flatpak/repo/tmp \
+    /usr/lib/sysimage/libdnf5/* \
     /var/cache/*
 
 # Podman/Buildah supplies runtime-only paths under /run. Never touch
