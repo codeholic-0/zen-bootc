@@ -23,7 +23,7 @@ dnf config-manager setopt \
 
 dnf config-manager setopt fedora-cisco-openh264.enabled=1
 
-dnf install -y --refresh \
+dnf install -y \
     rpmfusion-free-release-tainted \
     rpmfusion-nonfree-release-tainted
 

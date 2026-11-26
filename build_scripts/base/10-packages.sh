@@ -22,7 +22,7 @@ KDE_REMOVE=(
     krfb
 )
 
-dnf -y remove --skip-unavailable "${KDE_REMOVE[@]}"
+dnf -y remove "${KDE_REMOVE[@]}"
 dnf -y autoremove
 
 dnf_install \
@@ -52,6 +52,10 @@ dnf_install \
     lm_sensors \
     zsh \
     git \
+    curl \
+    wget2 \
+    wget2-wget\
+    jq \
     distrobox \
     btop \
     fastfetch \

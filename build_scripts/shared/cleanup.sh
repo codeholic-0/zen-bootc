@@ -15,8 +15,6 @@ rm -rf \
 
 # Podman/Buildah supplies runtime-only paths under /run. Never touch
 # /run/systemd* (buildah DNS bind mounts) or /run/secrets (secret mounts).
-# Use -exec rm -rf instead of -delete: find -delete fails the RUN on a busy
-# mount point, while rm only reports it.
 find /run -mindepth 1 \
     ! -path '/run/systemd*' \
     ! -path '/run/secrets' \
