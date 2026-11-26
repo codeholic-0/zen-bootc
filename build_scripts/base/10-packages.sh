@@ -75,6 +75,11 @@ SHELL_UTILS=(
     fd-find
     ripgrep
 
+    # Web Fetch
+    curl
+    wget2
+    wget2-wget
+
     # Search & navigation
     fzf
     zoxide

@@ -48,6 +48,8 @@ Published at: `ghcr.io/codeholic-0/zen-bootc`
   signature for pulls of this repo only.
 - Weekly rebuild (Sat ~18:05 UTC, `--pull=newer`) plus path-filtered CI.
 - `latest-YYYYMMDD-sha7` tags are immutable rollback anchors.
+- Weekly GHCR cleanup keeps `:latest` plus the 5 newest dated anchors; older
+  anchors are pruned (legacy flavor tags are left alone).
 - Installer ISO (manual dispatch) → SourceForge. See [`docs/iso.md`](docs/iso.md).
 
 ## Usage
@@ -129,6 +131,7 @@ files/usr/lib/bootc/kargs.d/10-plymouth.toml  boot kernel args
 legacy/nix/                        dormant Nix-era leftovers; image has NO Nix
 .github/workflows/bootc-publish.yaml CI: build → smoke → rechunk → push → sign
 .github/workflows/iso-publish.yaml   CI: manual ISO → SourceForge
+.github/workflows/cleanup-ghcr.yaml  CI: retain :latest + 5 dated anchors (weekly)
 testing/                           work notes + reference clones (gitignored)
 backup branch                      frozen generic multi-variant setup (reference only)
 ```

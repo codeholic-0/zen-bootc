@@ -1,4 +1,3 @@
-
 name: GHCR Cleanup
 
 on:
@@ -28,55 +27,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Keep the active stable image + 5 rollbacks.
-      - name: Retain stable images
+      # Keep the rolling :latest tag + 5 dated rollback anchors.
+      # Legacy stable/testing/dev/minimal tags are deliberately left alone.
+      - name: Retain latest images
         uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f
         with:
           owner: codeholic-0
           package: zen-bootc
-          delete-tags: '^stable-[0-9]{8}-[0-9a-f]{7}$'
+          delete-tags: '^latest-[0-9]{8}-[0-9a-f]{7}$'
           use-regex: true
           keep-n-tagged: 5
-          exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
-          delete-untagged: false
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-
-      # Keep the active testing image + 2 rollbacks.
-      - name: Retain testing images
-        uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f
-        with:
-          owner: codeholic-0
-          package: zen-bootc
-          delete-tags: '^testing-[0-9]{8}-[0-9a-f]{7}$'
-          use-regex: true
-          keep-n-tagged: 2
-          exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
-          delete-untagged: false
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-
-      # Keep the active dev image + 5 rollbacks.
-      - name: Retain dev images
-        uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f
-        with:
-          owner: codeholic-0
-          package: zen-bootc
-          delete-tags: '^dev-[0-9]{8}-[0-9a-f]{7}$'
-          use-regex: true
-          keep-n-tagged: 5
-          exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
-          delete-untagged: false
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-
-      # Keep the active minimal image + 2 rollbacks.
-      - name: Retain minimal images
-        uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f
-        with:
-          owner: codeholic-0
-          package: zen-bootc
-          delete-tags: '^minimal-[0-9]{8}-[0-9a-f]{7}$'
-          use-regex: true
-          keep-n-tagged: 2
-          exclude-tags: '^(stable|latest|testing|dev|minimal-latest)$'
+          exclude-tags: '^latest$'
           delete-untagged: false
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
 
