@@ -15,13 +15,23 @@ LABEL org.opencontainers.image.title="zen-bootc" \
       org.opencontainers.image.source="https://github.com/codeholic-0/zen-bootc" \
       org.opencontainers.image.url="https://github.com/codeholic-0/zen-bootc"
 
+
+# VSCodium Repo
+COPY files/etc/yum.repos.d/vscodium.repo /etc/yum.repos.d/vscodium.repo
+
+# Install & Configure
+RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
+    /ctx/build_scripts/shared/build-prep.sh && \
+    /ctx/build_scripts/base/00-repos.sh && \
+    /ctx/build_scripts/base/10-packages.sh && \
+    /ctx/build_scripts/base/20-multimedia.sh && \
+    /ctx/build_scripts/base/30-services.sh
+
 # Plymouth boot splash 
 # kargs side lives in files/usr/lib/bootc/kargs.d/10-plymouth.toml (rhgb quiet).
 COPY files/usr/lib/bootc/kargs.d/10-plymouth.toml /usr/lib/bootc/kargs.d/10-plymouth.toml
 RUN plymouth-set-default-theme breeze
-
-# VSCodium Repo
-COPY files/etc/yum.repos.d/vscodium.repo /etc/yum.repos.d/vscodium.repo
 
 # Custom Fetch Logo
 COPY files/etc/fastfetch/config.jsonc /etc/fastfetch/config.jsonc
@@ -51,15 +61,6 @@ COPY files/usr/lib/sysusers.d/zen-bootc.conf /usr/lib/sysusers.d/zen-bootc.conf
 COPY files/usr/bin/zen-ctl /usr/bin/zen-ctl
 COPY files/etc/cron.d/zen-ctl /etc/cron.d/zen-ctl
 RUN chmod 0755 /usr/bin/zen-ctl && chmod 0644 /etc/cron.d/zen-ctl
-
-# Install & Configure
-RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
-    --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \
-    /ctx/build_scripts/shared/build-prep.sh && \
-    /ctx/build_scripts/base/00-repos.sh && \
-    /ctx/build_scripts/base/10-packages.sh && \
-    /ctx/build_scripts/base/20-multimedia.sh && \
-    /ctx/build_scripts/base/30-services.sh
 
 # Clean Up
 RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \

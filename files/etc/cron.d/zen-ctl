@@ -1,5 +1,5 @@
 # zen-ctl weekly check (Sat 22:00 local; CI image lands ~Sat 23:35 IST,
-# so each check sees last week's :testing — by user choice)
+# so each check sees last week's :latest — by user choice)
 SHELL=/bin/bash
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 0 22 * * 6 root /usr/bin/zen-ctl check

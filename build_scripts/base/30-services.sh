@@ -17,6 +17,7 @@ systemctl enable \
     earlyoom.service \
     crond.service \
     -f
-systemctl disable NetworkManager-wait-online.service -f && systemctl mask NetworkManager-wait-online.service -f
+systemctl disable NetworkManager-wait-online.service -f
+systemctl mask NetworkManager-wait-online.service -f
 
 log_group_end

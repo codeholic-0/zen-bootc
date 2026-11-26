@@ -50,8 +50,7 @@ jobs:
           sudo apt-get install -y podman rsync
 
       - name: Build ISO
-        # %post derives the switch target from the installed system's own
-        # origin (:latest here), so no substitution is needed.
+        # %post pins the installed system to :latest; no substitution needed.
         # BIB pinned by digest; refetch when bumping deliberately. 24.04
         # runners expose /dev/kvm — the test ISO built in ~6 min.
         run: |
@@ -105,7 +104,8 @@ jobs:
           SF_USER: ${{ secrets.SF_USERNAME }}
         run: |
           set -euo pipefail
-          PKT=$(mktemp); install -m 600 /dev/null "$PKT"; printf '%s\n' "$SF_KEY" > "$PKT"
+          PKT=$(mktemp); trap 'rm -f "$PKT"' EXIT
+          install -m 600 /dev/null "$PKT"; printf '%s\n' "$SF_KEY" > "$PKT"
           SSHOPTS="ssh -i $PKT -o IdentitiesOnly=yes -o UserKnownHostsFile=/tmp/sf_known_hosts -o StrictHostKeyChecking=yes"
           DATE_DIR="$(date -u +%Y-%m-%d)"
           # frs is a restricted shell (rsync/sftp only): no ssh mkdir/ls.
@@ -127,14 +127,14 @@ jobs:
           SF_USER: ${{ secrets.SF_USERNAME }}
         run: |
           set -euo pipefail
-          PKT=$(mktemp); install -m 600 /dev/null "$PKT"; printf '%s\n' "$SF_KEY" > "$PKT"
+          PKT=$(mktemp); trap 'rm -f "$PKT"' EXIT
+          install -m 600 /dev/null "$PKT"; printf '%s\n' "$SF_KEY" > "$PKT"
           SSHOPTS="ssh -i $PKT -o IdentitiesOnly=yes -o UserKnownHostsFile=/tmp/sf_known_hosts -o StrictHostKeyChecking=yes"
           rsync -a --list-only -e "$SSHOPTS" \
             "$SF_USER@frs.sourceforge.net:/home/frs/project/$SF_PROJECT/$SF_DATE_DIR/" \
             | tee listing.txt
           grep -q "$ISO_NAME" listing.txt || { echo "ISO not visible on frs"; exit 1; }
           grep -q "$ISO_HASH" listing.txt || { echo "Checksum not visible on frs"; exit 1; }
-          rm -f "$PKT"
           {
             echo "## ISO published"
             echo ""

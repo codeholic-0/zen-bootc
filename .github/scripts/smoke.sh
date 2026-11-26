@@ -28,11 +28,14 @@ check() {
 # Fedora major version is baked as ENV FEDORA_VER in the Containerfile.
 VER=${FEDORA_VER:?FEDORA_VER not set in image}
 
+# Package, debloat, service, flathub, symlink and lint invariants are asserted
+# at build time by build_scripts/base/90-validation.sh; this script covers the
+# runtime-facing image contract only.
+
 # --- Image invariants ---
 check "os-release NAME"              grep -q '^NAME="ZenC OS"' /etc/os-release
 check "os-release VERSION_ID ${VER}" grep -q "^VERSION_ID=${VER}$" /etc/os-release
 check "PRETTY_NAME ZenC OS ${VER}"   grep -qx "PRETTY_NAME=\"ZenC OS ${VER} (KDE Plasma Desktop)\"" /usr/lib/os-release
-check "os-release symlink"           test "$(readlink /etc/os-release)" = "../usr/lib/os-release"
 
 check "zen-ctl syntax"               bash -n /usr/bin/zen-ctl
 check "zen-ctl executable"           test -x /usr/bin/zen-ctl
@@ -72,10 +75,5 @@ check "sqlite3 on PATH"              command -v sqlite3
 check "iverilog on PATH"             command -v iverilog
 check "verilator on PATH"            command -v verilator
 check "gtkwave on PATH"              command -v gtkwave
-
-# --- Services ---
-for svc in docker crond earlyoom NetworkManager plasmalogin; do
-    check "enabled: $svc" systemctl is-enabled --quiet "$svc"
-done
 
 echo "smoke: all checks passed"

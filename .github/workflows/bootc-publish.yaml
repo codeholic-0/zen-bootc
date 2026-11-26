@@ -65,18 +65,6 @@ jobs:
           # Immutable rollback anchor: latest-<UTC date>-<commit sha7>.
           echo "DTAG=$IMAGE:latest-$(date -u +%Y%m%d)-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
 
-      - name: Smoke-check image
-        # Runs the assembled image (the artifact that gets pushed+signed) and
-        # asserts invariants before rechunk: branding, zen-ctl wiring,
-        # signature policy, shipped files. Checks live in
-        # .github/scripts/smoke.sh and are fed on stdin so they are not baked
-        # into the image. The script prints "ok:"/"FAIL: <desc>" per assertion
-        # and traces the failing command, so a broken invariant names itself.
-        run: |
-          set -euo pipefail
-          IMAGE="${IMAGE,,}"
-          podman run --rm -i "$IMAGE:latest" /bin/bash -s < .github/scripts/smoke.sh
-
       - name: zen-dev fetch check (user-local, not baked)
         # zen-dev lives in $HOME, not the image; CI validates the raw URL parses.
         run: |
@@ -110,6 +98,16 @@ jobs:
           CHUNKED_IMAGE="$(podman pull "oci:${CHUNKAH_OUTPUT_DIR}/chunked")"
           podman untag "$IMAGE:latest" || true
           podman tag "$CHUNKED_IMAGE" "$IMAGE:latest" "$DTAG"
+
+      - name: Smoke-check image
+        # Runs the final chunked image (the artifact that gets pushed+signed)
+        # and asserts branding, zen-ctl wiring, signature policy and toolchain
+        # invariants. Checks live in .github/scripts/smoke.sh and are fed on
+        # stdin so they are not baked into the image.
+        run: |
+          set -euo pipefail
+          IMAGE="${IMAGE,,}"
+          podman run --rm -i "$IMAGE:latest" /bin/bash -s < .github/scripts/smoke.sh
 
       - name: Push image
         run: |

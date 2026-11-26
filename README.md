@@ -87,8 +87,8 @@ detection is cron-automated; applying is manual.
 
 `zen-dev` installs optional dev tooling into `$HOME` via each tool's official
 upstream installer — never baked into the image, never touches `/usr`.
-Fresh ISO installs ship it to `~/.local/bin` automatically; elsewhere run
-`zen-ctl zen-dev` (no sudo; refuses sudo/root, writes only to `$HOME`).
+Run `zen-ctl zen-dev` on any install (no sudo; refuses sudo/root, writes only
+to `$HOME`).
 Fallback one-liner:
 
 ```bash

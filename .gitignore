@@ -1,3 +1,4 @@
 .logs
 .sys_pkgs
 **/testing/**
+output/

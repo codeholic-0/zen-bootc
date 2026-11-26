@@ -39,14 +39,13 @@ sudo podman run --rm -it --privileged \
 ```
 
 Output: `output/bootiso/install.iso`. BIB doesn't auto-pull — the target tag
-must be in storage first. The ISO installs **exactly the image you pass it**:
-the kickstart `%post` reads the freshly installed system's own origin ref and
-re-pulls that tag, so there is no per-image substitution (normally `:latest`).
+must be in storage first. The installer content is whatever image you pass, but
+the kickstart `%post` always pins the installed system to `:latest` (network
+required), so build from `:latest` unless you deliberately want otherwise.
 
 ## Install
 
 Boot → interactive Anaconda (locale, keyboard, timezone, partitioning, user).
-`%post`: derive the tracked tag from the install's origin (`container-image
--reference=...` in `/ostree/deploy/default/deploy/*.origin`), `bootc switch`
-to it (network required), then Flathub remote-add. `%post` also installs
-zen-dev to `~/.local/bin` for every created user.
+`%post`: `bootc switch` to `ghcr.io/codeholic-0/zen-bootc:latest` (network
+required). Flathub is baked into the image; optional user-local tooling is
+installed with `zen-ctl zen-dev`.

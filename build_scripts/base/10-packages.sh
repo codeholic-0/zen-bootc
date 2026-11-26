@@ -44,8 +44,8 @@ DEV_DEPS=(
     kate
 
     # Verilog
-    iverilog 
-    verilator 
+    iverilog
+    verilator
     gtkwave
 
     # Version control

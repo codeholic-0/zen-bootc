@@ -1,6 +1,5 @@
 NAME="ZenC OS"
 VERSION="45 (KDE Plasma Desktop)"
-RELEASE_TYPE=stable
 ID=zenc
 ID_LIKE="fedora"
 VERSION_ID=45
