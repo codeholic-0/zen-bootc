@@ -14,6 +14,8 @@ systemctl enable \
     NetworkManager.service \
     plasmalogin.service \
     docker.service \
+    docker.socket \
+    podman.socket \
     earlyoom.service \
     crond.service \
     bootc-update-ca-trust.service \

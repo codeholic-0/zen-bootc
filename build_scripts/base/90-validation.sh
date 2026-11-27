@@ -7,7 +7,7 @@ log_group "$(basename "$0")"
 
 test "$(readlink /etc/os-release)" = "../usr/lib/os-release"
 
-for pkg in docker-ce podman flatpak distrobox kate vlc zsh jq curl bootc ffmpeg codium; do
+for pkg in docker-ce podman flatpak distrobox kate vlc zsh jq curl bootc ffmpeg codium just xdg-terminal-exec; do
     rpm -q "$pkg" >/dev/null || { echo "missing package: $pkg" >&2; exit 1; }
 done
 
@@ -24,6 +24,8 @@ rpm -q --qf '%{VENDOR}\n' ffmpeg | grep -qi 'rpm fusion' \
 systemctl is-enabled NetworkManager.service >/dev/null
 systemctl is-enabled plasmalogin.service >/dev/null
 systemctl is-enabled docker.service >/dev/null
+systemctl is-enabled docker.socket >/dev/null
+systemctl is-enabled podman.socket >/dev/null
 systemctl is-enabled earlyoom.service >/dev/null
 systemctl is-enabled crond.service >/dev/null
 systemctl is-enabled bootc-update-ca-trust.service >/dev/null

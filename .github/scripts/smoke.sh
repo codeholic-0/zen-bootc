@@ -59,12 +59,15 @@ check "cosign public key"            test -f /usr/share/containers/cosign.pub
 check "docker group"                 grep -q '^g docker' /usr/lib/sysusers.d/zen-bootc.conf
 check "ca-trust regen enabled"       test -e /etc/systemd/system/sysinit.target.wants/bootc-update-ca-trust.service
 check "crypto-policy regen enabled"  test -e /etc/systemd/system/sysinit.target.wants/bootc-update-crypto-policies.service
+check "docker socket enabled"        test -e /etc/systemd/system/sockets.target.wants/docker.socket
+check "podman socket enabled"        test -e /etc/systemd/system/sockets.target.wants/podman.socket
 
 # --- Toolchain (baked into the only image) ---
 check "gcc on PATH"                  command -v gcc
 check "g++ on PATH"                  command -v g++
 check "make on PATH"                 command -v make
 check "cmake on PATH"                command -v cmake
+check "just on PATH"                 command -v just
 check "gdb on PATH"                  command -v gdb
 check "python3 on PATH"              command -v python3
 check "codium on PATH"               command -v codium
@@ -73,6 +76,7 @@ check "codium product.json valid"    jq -e . /usr/share/codium/resources/app/pro
 check "codium gallery overridden"    jq -e '.extensionsGallery.serviceUrl == "https://marketplace.visualstudio.com/_apis/public/gallery"' /usr/share/codium/resources/app/product.json
 check "autoconf on PATH"             command -v autoconf
 check "shellcheck on PATH"           command -v shellcheck
+check "xdg-terminal-exec on PATH"    command -v xdg-terminal-exec
 check "gh on PATH"                   command -v gh
 check "nvim on PATH"                 command -v nvim
 check "yq on PATH"                   command -v yq

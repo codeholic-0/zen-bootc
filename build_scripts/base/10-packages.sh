@@ -37,6 +37,8 @@ DEV_DEPS=(
     lld
     python3
     python3-pip
+    # Task runner
+    just
 
     # Debugging
     gdb
@@ -133,6 +135,7 @@ DESKTOP_APPS=(
     # Desktop utilities
     zenity
     mediawriter
+    xdg-terminal-exec
 )
 
 REPOSITORIES=(
