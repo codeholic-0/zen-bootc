@@ -44,10 +44,15 @@ jobs:
             > /tmp/verify-out.json
           echo "Signature OK: $(jq -r '.[0].critical.image."docker-manifest-digest"' /tmp/verify-out.json)"
 
-      - name: Install podman
+      - name: Install podman & rsync
         run: |
-          sudo apt-get update
-          sudo apt-get install -y podman rsync
+          missing=()
+          command -v podman >/dev/null 2>&1 || missing+=(podman)
+          command -v rsync >/dev/null 2>&1 || missing+=(rsync)
+          if ((${#missing[@]})); then
+            sudo apt-get update
+            sudo apt-get install -y "${missing[@]}"
+          fi
 
       - name: Build ISO
         # %post pins the installed system to :latest; no substitution needed.
