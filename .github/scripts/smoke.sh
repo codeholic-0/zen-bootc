@@ -36,6 +36,7 @@ VER=${FEDORA_VER:?FEDORA_VER not set in image}
 check "os-release NAME"              grep -q '^NAME="ZenC OS"' /etc/os-release
 check "os-release VERSION_ID ${VER}" grep -q "^VERSION_ID=${VER}$" /etc/os-release
 check "PRETTY_NAME ZenC OS ${VER}"   grep -qx "PRETTY_NAME=\"ZenC OS ${VER} (KDE Plasma Desktop)\"" /usr/lib/os-release
+check "copr vendor override" grep -q '^distribution = fedora$' /usr/share/dnf/plugins/copr.vendor.conf
 
 check "zen-ctl syntax"               bash -n /usr/bin/zen-ctl
 check "zen-ctl executable"           test -x /usr/bin/zen-ctl

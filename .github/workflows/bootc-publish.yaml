@@ -109,16 +109,21 @@ jobs:
           IMAGE="${IMAGE,,}"
           podman run --rm -i "$IMAGE:latest" /bin/bash -s < .github/scripts/smoke.sh
 
-      - name: Push image
+      - name: Push staging image (unsigned, not user-facing)
+        # Stage the exact image that will be published, sign its digest, and
+        # only then move the production tags. A cancelled/failed run therefore
+        # never leaves an unsigned :latest or dated anchor behind.
+        # staging-latest is a fixed alias, overwritten on every run; old
+        # digests become untagged and are removed by the weekly GHCR cleanup.
         run: |
           IMAGE="${IMAGE,,}"
-          for ref in "$IMAGE:latest" "$DTAG"; do
-            # First push uploads fresh blobs but DROPS chunkah layer
-            # annotations (podman #27796) -> digest differs. The second push
-            # converges every ref onto the annotated digest; sign THAT.
-            podman push "$ref"
-            podman push --digestfile=/tmp/digestfile "$ref"
-          done
+          STAGING="$IMAGE:staging-latest"
+          podman tag "$IMAGE:latest" "$STAGING"
+          # First push uploads fresh blobs but DROPS chunkah layer
+          # annotations (podman #27796) -> digest differs. The second push
+          # converges onto the annotated digest; sign THAT digest.
+          podman push "$STAGING"
+          podman push --digestfile=/tmp/digestfile "$STAGING"
 
       - name: Log in to GHCR (docker client, for cosign)
         # cosign uses its own credential chain, not podman's authfile.
@@ -130,9 +135,18 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
         run: |
           IMAGE="${IMAGE,,}"
-          # Sign the pushed digest; every tag sharing it is covered.
+          # Sign the staged digest before any production tag is moved.
+          # Keep the old bundle flags: bootc/rpm-ostree need that format.
           cosign sign -y --new-bundle-format=false --use-signing-config=false \
             --key env://COSIGN_PRIVATE_KEY "$IMAGE@$(cat /tmp/digestfile)"
+
+      - name: Push production tags (already signed)
+        run: |
+          IMAGE="${IMAGE,,}"
+          for ref in "$IMAGE:latest" "$DTAG"; do
+            podman push "$ref"
+            podman push --digestfile=/tmp/prod-digestfile "$ref"
+          done
 
       - name: Verify signature (self-check)
         # Verify BY TAG: each tag's registry digest must be the signed one

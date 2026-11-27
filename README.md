@@ -106,7 +106,7 @@ zen-dev-install.sh                 fallback installer one-liner for zen-dev
 docs/iso.md                        ISO build + SourceForge guide
 files/usr/lib/bootc/kargs.d/10-plymouth.toml  boot kernel args
 legacy/nix/                        dormant Nix-era leftovers; image has NO Nix
-.github/workflows/bootc-publish.yaml CI: build → smoke → rechunk → push → sign
+.github/workflows/bootc-publish.yaml CI: build → rechunk → smoke → stage+sign → publish
 .github/workflows/iso-publish.yaml   CI: manual ISO → SourceForge
 .github/workflows/cleanup-ghcr.yaml  CI: retain :latest + 5 dated anchors (weekly)
 backup branch                      frozen generic multi-variant setup (reference only)
@@ -115,8 +115,8 @@ backup branch                      frozen generic multi-variant setup (reference
 ## Development loop
 
 1. Edit `Containerfile`, `build_scripts/` or `files/`, push to `main`.
-2. CI builds, smoke-checks, rechunks, signs and publishes `:latest`; install or
-   `bootc upgrade` on the machine to test.
+2. CI builds, rechunks, smoke-checks, signs the staged digest, then publishes
+   `:latest`; install or `bootc upgrade` on the machine to test.
 3. Pin a dated `latest-YYYYMMDD-sha7` anchor if you want to hold a known-good
    build; `zen-ctl switch` moves between anchors.
 4. For an installer, dispatch "Publish ISO" manually.
