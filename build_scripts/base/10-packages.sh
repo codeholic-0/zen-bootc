@@ -91,6 +91,7 @@ SHELL_UTILS=(
     # File & text utilities
     dos2unix
     plocate
+    symlinks
 )
 
 PLYMOUTH=(
@@ -116,6 +117,7 @@ SYSTEM_UTILS=(
     libblockdev-btrfs
     cryfs
     scrub
+    device-mapper-multipath-libs
 
     # Process & resource management
     earlyoom
@@ -124,6 +126,13 @@ SYSTEM_UTILS=(
     cronie
     cronie-anacron
     crontabs
+
+    #AppImages
+    fuse
+    fuse-encfs
+
+    #Adb
+    android-tools
 )
 
 DESKTOP_APPS=(
