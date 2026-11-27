@@ -156,4 +156,30 @@ dnf_install \
 
 dnf -y install --exclude=gedit iverilog verilator gtkwave
 
+FONT_DIR="/usr/share/fonts/nerd-fonts"
+
+mkdir -p "$FONT_DIR"
+
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+curl -fL \
+  "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/FiraCode.zip" \
+  -o "$TMP_DIR/FiraCode.zip"
+
+curl -fL \
+  "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/NerdFontsSymbolsOnly.zip" \
+  -o "$TMP_DIR/NerdFontsSymbolsOnly.zip"
+
+unzip -oq "$TMP_DIR/FiraCode.zip" -d "$TMP_DIR/FiraCode"
+unzip -oq "$TMP_DIR/NerdFontsSymbolsOnly.zip" -d "$TMP_DIR/Symbols"
+
+find "$TMP_DIR/FiraCode" "$TMP_DIR/Symbols" \
+  -type f \( -iname '*.ttf' -o -iname '*.otf' \) \
+  -exec install -m 644 {} "$FONT_DIR/" \;
+
+fc-cache -f "$FONT_DIR"
+
+echo "FiraCode Nerd Font and Nerd Fonts Symbols Only installed."
+
 log_group_end
