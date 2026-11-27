@@ -24,6 +24,9 @@ Published at: `ghcr.io/codeholic-0/zen-bootc`
 - In-image enforcement: [`policy.json`](policy.json) +
   [`registries.d/zen-bootc.yaml`](registries.d/zen-bootc.yaml) require a valid
   signature for pulls of this repo only.
+- VSCodium's `extensionsGallery` is patched at build time to the marketplace
+  endpoints in [`11-vscodium-gallery.sh`](build_scripts/base/11-vscodium-gallery.sh)
+  (the stock Open VSX gallery was missing extensions).
 - Weekly rebuild (Sat ~18:05 UTC, `--pull=newer`) plus path-filtered CI.
 - `latest-YYYYMMDD-sha7` tags are immutable rollback anchors.
 - Weekly GHCR cleanup keeps `:latest` plus the 5 newest dated anchors; older

@@ -69,6 +69,8 @@ check "gdb on PATH"                  command -v gdb
 check "python3 on PATH"              command -v python3
 check "codium on PATH"               command -v codium
 check "vscodium repo"                grep -q vscodium /etc/yum.repos.d/vscodium.repo
+check "codium product.json valid"    jq -e . /usr/share/codium/resources/app/product.json
+check "codium gallery overridden"    jq -e '.extensionsGallery.serviceUrl == "https://marketplace.visualstudio.com/_apis/public/gallery"' /usr/share/codium/resources/app/product.json
 check "autoconf on PATH"             command -v autoconf
 check "shellcheck on PATH"           command -v shellcheck
 check "gh on PATH"                   command -v gh

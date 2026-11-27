@@ -29,6 +29,7 @@ RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
     /ctx/build_scripts/shared/build-prep.sh && \
     /ctx/build_scripts/base/00-repos.sh && \
     /ctx/build_scripts/base/10-packages.sh && \
+    /ctx/build_scripts/base/11-vscodium-gallery.sh && \
     /ctx/build_scripts/base/20-multimedia.sh && \
     /ctx/build_scripts/base/30-services.sh
 
