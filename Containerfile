@@ -36,7 +36,6 @@ RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
 # Plymouth boot splash 
 # kargs side lives in files/usr/lib/bootc/kargs.d/10-plymouth.toml (rhgb quiet).
 COPY files/usr/lib/bootc/kargs.d/10-plymouth.toml /usr/lib/bootc/kargs.d/10-plymouth.toml
-RUN plymouth-set-default-theme breeze
 
 # Custom Fetch Logo
 COPY files/etc/fastfetch/config.jsonc /etc/fastfetch/config.jsonc
@@ -45,7 +44,10 @@ COPY files/usr/share/zen-bootc/branding/zenc.txt /usr/share/zen-bootc/branding/z
 # Branding: ZenC OS 
 # /etc/os-release ships as ../usr/lib/os-release symlink (asserted below).
 COPY files/usr/lib/os-release /usr/lib/os-release
+
+#COPR Vendor config
 COPY files/usr/share/dnf/plugins/copr.vendor.conf /usr/share/dnf/plugins/copr.vendor.conf
+
 # Client-side signature verification
 # /etc/containers/ is the bootc-supported location (/usr/etc fails lint).
 # signedIdentity=matchRepository is required for cosign (signs the repo, not

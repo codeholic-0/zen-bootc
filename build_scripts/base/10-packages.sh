@@ -94,12 +94,6 @@ SHELL_UTILS=(
     symlinks
 )
 
-PLYMOUTH=(
-    plymouth
-    plymouth-system-theme
-    plymouth-theme-breeze
-)
-
 CONTAINERS=(
     # Docker
     docker-ce
@@ -151,7 +145,6 @@ REPOSITORIES=(
 dnf_install \
     "${DEV_DEPS[@]}" \
     "${SHELL_UTILS[@]}" \
-    "${PLYMOUTH[@]}" \
     "${CONTAINERS[@]}" \
     "${SYSTEM_UTILS[@]}" \
     "${DESKTOP_APPS[@]}" \
