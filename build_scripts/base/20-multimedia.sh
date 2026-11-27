@@ -12,9 +12,6 @@ else
     dnf -y install ffmpeg --allowerasing
 fi
 
-dnf_install \
-    plymouth \
-    plymouth-system-theme \
-    plymouth-theme-breeze
+dnf_install vlc yt-dlp gthumb guvcview
 
 log_group_end

@@ -93,16 +93,10 @@ SHELL_UTILS=(
     plocate
 )
 
-MEDIA=(
-    # Video & audio
-    vlc
-    yt-dlp
-
-    # Image management
-    gthumb
-
-    # Webcam
-    guvcview
+PLYMOUTH=(
+    plymouth
+    plymouth-system-theme
+    plymouth-theme-breeze
 )
 
 CONTAINERS=(
@@ -148,7 +142,7 @@ REPOSITORIES=(
 dnf_install \
     "${DEV_DEPS[@]}" \
     "${SHELL_UTILS[@]}" \
-    "${MEDIA[@]}" \
+    "${PLYMOUTH[@]}" \
     "${CONTAINERS[@]}" \
     "${SYSTEM_UTILS[@]}" \
     "${DESKTOP_APPS[@]}" \
