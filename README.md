@@ -62,6 +62,9 @@ zen-ctl zen-dev          # install/refresh user-local zen-dev (no sudo)
 Sudo is prompted for system commands except `zen-ctl zen-dev` and `switch --list`;
 detection is cron-automated; applying is manual.
 
+CA trust and crypto-policy backends are regenerated at boot after upgrades, so
+preserved `/etc` state doesn't go stale.
+
 ## zen-dev (user-local tooling)
 
 `zen-dev` installs optional dev tooling into `$HOME` via each tool's official

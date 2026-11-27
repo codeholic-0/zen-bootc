@@ -19,6 +19,10 @@ LABEL org.opencontainers.image.title="zen-bootc" \
 # VSCodium Repo
 COPY files/etc/yum.repos.d/vscodium.repo /etc/yum.repos.d/vscodium.repo
 
+# Early-boot /etc regeneration units (enabled by 30-services.sh)
+COPY files/usr/lib/systemd/system/bootc-update-ca-trust.service /usr/lib/systemd/system/bootc-update-ca-trust.service
+COPY files/usr/lib/systemd/system/bootc-update-crypto-policies.service /usr/lib/systemd/system/bootc-update-crypto-policies.service
+
 # Install & Configure
 RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache/libdnf5,sharing=locked \

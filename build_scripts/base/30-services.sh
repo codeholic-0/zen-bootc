@@ -16,6 +16,8 @@ systemctl enable \
     docker.service \
     earlyoom.service \
     crond.service \
+    bootc-update-ca-trust.service \
+    bootc-update-crypto-policies.service \
     -f
 systemctl disable NetworkManager-wait-online.service -f
 systemctl mask NetworkManager-wait-online.service -f

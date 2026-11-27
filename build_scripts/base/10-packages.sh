@@ -157,11 +157,13 @@ mkdir -p "$FONT_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-curl -fL \
+CURL_RETRY=(--retry 5 --retry-delay 5 --retry-all-errors --retry-max-time 120)
+
+curl -fL "${CURL_RETRY[@]}" \
   "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/FiraCode.zip" \
   -o "$TMP_DIR/FiraCode.zip"
 
-curl -fL \
+curl -fL "${CURL_RETRY[@]}" \
   "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/NerdFontsSymbolsOnly.zip" \
   -o "$TMP_DIR/NerdFontsSymbolsOnly.zip"
 

@@ -57,6 +57,8 @@ check "fastfetch renders"            fastfetch --pipe false
 check "policy sigstoreSigned"        grep -q sigstoreSigned /etc/containers/policy.json
 check "cosign public key"            test -f /usr/share/containers/cosign.pub
 check "docker group"                 grep -q '^g docker' /usr/lib/sysusers.d/zen-bootc.conf
+check "ca-trust regen enabled"       test -e /etc/systemd/system/sysinit.target.wants/bootc-update-ca-trust.service
+check "crypto-policy regen enabled"  test -e /etc/systemd/system/sysinit.target.wants/bootc-update-crypto-policies.service
 
 # --- Toolchain (baked into the only image) ---
 check "gcc on PATH"                  command -v gcc

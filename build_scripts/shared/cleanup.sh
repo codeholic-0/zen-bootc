@@ -5,6 +5,11 @@ source /ctx/build_scripts/lib/common.sh
 require_root
 log_group "$(basename "$0")"
 
+# Undo build-only DNF tuning from build-prep.sh.
+if [ -f /etc/dnf/dnf.conf.bak ]; then
+    mv /etc/dnf/dnf.conf.bak /etc/dnf/dnf.conf
+fi
+
 # Remove known build residue. This RUN has no cache mount, so /var/cache/*
 # is committed residue, not the live libdnf5 cache.
 rm -rf \

@@ -13,4 +13,9 @@ fi
 
 dnf -y install dnf5-plugins
 
+# Build-only DNF tuning: keep downloaded metadata/RPMs and avoid long stalls.
+# Restored in shared/cleanup.sh so it is not shipped in the image.
+cp /etc/dnf/dnf.conf /etc/dnf/dnf.conf.bak
+dnf config-manager setopt keepcache=1 timeout=60
+
 log_group_end

@@ -26,6 +26,8 @@ systemctl is-enabled plasmalogin.service >/dev/null
 systemctl is-enabled docker.service >/dev/null
 systemctl is-enabled earlyoom.service >/dev/null
 systemctl is-enabled crond.service >/dev/null
+systemctl is-enabled bootc-update-ca-trust.service >/dev/null
+systemctl is-enabled bootc-update-crypto-policies.service >/dev/null
 
 flatpak remote-list --system | grep -q flathub
 
