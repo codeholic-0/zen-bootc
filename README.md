@@ -17,8 +17,9 @@ Published at: `ghcr.io/codeholic-0/zen-bootc`
   cleanup → validation), ending in `bootc container lint`.
 - Smoke-tested inside the built image ([`.github/scripts/smoke.sh`](.github/scripts/smoke.sh))
   before anything is pushed.
-- Rechunked with [chunkah](https://github.com/coreos/chunkah) → ~128 layers, so
-  `bootc upgrade` pulls small deltas.
+- Rechunked with [chunkah](https://github.com/coreos/chunkah) → ~256 layers, so
+  `bootc upgrade` pulls small deltas. Build-time mtimes are normalized so
+  unchanged layers stay identical between builds.
 - Cosign-signed by digest ([`cosign.pub`](cosign.pub); `SIGNING_SECRET`).
 - In-image enforcement: [`policy.json`](policy.json) +
   [`registries.d/zen-bootc.yaml`](registries.d/zen-bootc.yaml) require a valid

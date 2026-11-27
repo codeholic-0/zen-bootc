@@ -2,7 +2,8 @@
 # zen-ctl — upgrade check/status/apply/switch for zen-bootc; zen-dev bootstrap.
 # Contract (verified 2026-11-10 on bootc-vm): no-update=empty+rc0;
 # available=prose+rc0; unsigned ref=error+rc1. State: /var/lib/zen-ctl/last-check.
-# Update size (bootc's "Total/Added/Removed layers ... Size:") is shown now.
+# Update size is bootc's "Added layers ... Size:" (the actual delta); its
+# "Total new layers ... Size:" is the whole image, shown only as context.
 set -u
 
 STATE_DIR=/var/lib/zen-ctl
@@ -20,7 +21,7 @@ save_state() { mkdir -p "$STATE_DIR" && printf '%s\n' "$1" > "$STATE_DIR/last-ch
 
 cmd_check() {
     for_sub check "$@"
-    local out rc digest ver size added removed
+    local out rc digest ver size total added removed
     out=$(bootc upgrade --check 2>&1) && rc=0 || rc=$?
     if [ "$rc" -ne 0 ]; then
         save_state "$(date -Is) error $(printf '%s' "$out" | head -1)"
@@ -38,14 +39,15 @@ cmd_check() {
     if printf '%s' "$out" | grep -q '^Update available for:'; then
         digest=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Digest: //p' | head -1)
         ver=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Version: //p' | head -1)
-        size=$(printf '%s\n' "$out" | sed -n 's/^Total new layers:.*Size: //p' | head -1)
-        added=$(printf '%s\n' "$out" | sed -n 's/^Added layers:.*Size: //p' | head -1)
-        removed=$(printf '%s\n' "$out" | sed -n 's/^Removed layers:.*Size: //p' | head -1)
+        size=$(printf '%s\n' "$out" | sed -n 's/^Added layers:.*Size: //p' | head -1)
+        total=$(printf '%s\n' "$out" | sed -n 's/^Total new layers:.*Size: //p' | head -1)
+        added=$(printf '%s\n' "$out" | sed -n 's/^Added layers:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+        removed=$(printf '%s\n' "$out" | sed -n 's/^Removed layers:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
         save_state "$(date -Is) available ${digest:-?} ${ver:-?} ${size:-?}"
         logger -t zen-ctl "check: update available ${ver:-} ${digest:-} ${size:-}"
         echo "zen-ctl: update available ${ver:-(version unknown)} ${digest:-}"
         if [ -n "${size:-}" ]; then
-            echo "          size: ${size}"
+            echo "          size: ${size}${total:+ (image ${total})}"
         fi
         if [ -n "${added:-}" ] || [ -n "${removed:-}" ]; then
             echo "          layers: +${added:-?} added / -${removed:-?} removed"
@@ -64,7 +66,7 @@ cmd_check() {
 
 cmd_status() {
     for_sub status "$@"
-    local sj d1 v1 tag d2 out d3 v2 size
+    local sj d1 v1 tag d2 out d3 v2 size total
     local rollback_digest rollback_version rollback_tag
     sj=$(bootc status --json 2>/dev/null)
     d1=$(printf '%s' "$sj" | dig '.status.booted.image.imageDigest')
@@ -102,9 +104,10 @@ cmd_status() {
     fi
     d3=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Digest: //p' | head -1)
     v2=$(printf '%s' "$out" | sed -n 's/^[[:space:]]*Version: //p' | head -1)
-    size=$(printf '%s\n' "$out" | sed -n 's/^Total new layers:.*Size: //p' | head -1)
+    size=$(printf '%s\n' "$out" | sed -n 's/^Added layers:.*Size: //p' | head -1)
+    total=$(printf '%s\n' "$out" | sed -n 's/^Total new layers:.*Size: //p' | head -1)
     echo "remote:  update available ${v2:-} ${d3:-}"
-    [ -n "${size:-}" ] && echo "         size: ${size}"
+    [ -n "${size:-}" ] && echo "         size: ${size}${total:+ (image ${total})}"
     save_state "$(date -Is) available ${d3:-?} ${v2:-?} ${size:-?}"
     return 1
 }
