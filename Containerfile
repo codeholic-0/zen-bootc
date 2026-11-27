@@ -33,8 +33,9 @@ RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \
     /ctx/build_scripts/base/20-multimedia.sh && \
     /ctx/build_scripts/base/30-services.sh
 
-# Plymouth boot splash 
-# kargs side lives in files/usr/lib/bootc/kargs.d/10-plymouth.toml (rhgb quiet).
+# Plymouth boot splash
+# kargs side lives in files/usr/lib/bootc/kargs.d/10-plymouth.toml
+# (rhgb quiet, systemd.gpt_auto=0).
 COPY files/usr/lib/bootc/kargs.d/10-plymouth.toml /usr/lib/bootc/kargs.d/10-plymouth.toml
 
 # Custom Fetch Logo

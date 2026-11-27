@@ -1,1 +1,5 @@
-kargs = ["rhgb", "quiet"]
+# /home is a symlink to /var/home on bootc; gpt-auto would otherwise generate
+# a non-canonical home.mount for a GPT "Linux home" partition and drop us into
+# emergency mode (ostree >= 2026.3). fstab already covers /, /boot, /boot/efi,
+# /var/home and swap.
+kargs = ["rhgb", "quiet", "systemd.gpt_auto=0"]
