@@ -26,6 +26,10 @@ The Actions UI exposes the same plain "Run workflow" button.
 
 ## Local build
 
+BIB is pinned to the same digest as CI. `bootc-image-builder:latest` is not a
+drop-in replacement here: newer BIB derives installer repos from `ID=zenc`,
+which fails with `requested repository not found: for distribution "zenc-45"`.
+
 ```bash
 sudo podman pull ghcr.io/codeholic-0/zen-bootc:latest
 mkdir -p output
@@ -33,7 +37,7 @@ sudo podman run --rm -it --privileged \
   -v "$(pwd)/output:/output" \
   -v /var/lib/containers/storage:/var/lib/containers/storage \
   -v "$(pwd)/disk_config/iso-kde.toml:/config.toml:ro" \
-  quay.io/centos-bootc/bootc-image-builder:latest \
+  quay.io/centos-bootc/bootc-image-builder@sha256:dab86ee6b46dcade411b37f4e70b07d93b6a06da0dbfec6fe89247a220e0d9f8 \
   --rootfs ext4 --type anaconda-iso \
   ghcr.io/codeholic-0/zen-bootc:latest
 ```
