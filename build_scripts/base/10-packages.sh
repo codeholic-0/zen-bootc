@@ -21,6 +21,7 @@ KDE_REMOVE=(
     plasma-systemmonitor
     kwrite
     krfb
+    plasma-workspace-wallpapers
 )
 
 dnf -y remove "${KDE_REMOVE[@]}"

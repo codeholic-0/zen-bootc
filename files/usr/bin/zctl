@@ -1,18 +1,18 @@
 #!/bin/bash
-# zen-ctl — upgrade check/status/apply/switch for zen-bootc; zen-dev bootstrap.
+# zctl — upgrade check/status/apply/switch for zen-bootc; zdev bootstrap.
 # Contract (verified 2026-11-10 on bootc-vm): no-update=empty+rc0;
-# available=prose+rc0; unsigned ref=error+rc1. State: /var/lib/zen-ctl/last-check.
+# available=prose+rc0; unsigned ref=error+rc1. State: /var/lib/zctl/last-check.
 # Update size is bootc's "Added layers ... Size:" (the actual delta); its
 # "Total new layers ... Size:" is the whole image, shown only as context.
 set -u
 
-STATE_DIR=/var/lib/zen-ctl
+STATE_DIR=/var/lib/zctl
 REPO=ghcr.io/codeholic-0/zen-bootc
 SELF=$(readlink -f "$0")
-ZEN_DEV_RAW=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev
+ZEN_DEV_RAW=https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zdev
 dig() { jq -r "$1" 2>/dev/null; }
 
-# Self-elevate once: bare `zen-ctl …` prompts for sudo, root/cron pass through.
+# Self-elevate once: bare `zctl …` prompts for sudo, root/cron pass through.
 # Never called by cmd_zen_dev — that subcommand is strictly user-local.
 for_sub() {
     [ "$(id -u)" -eq 0 ] || exec sudo -- "$SELF" "$@"
@@ -25,15 +25,15 @@ cmd_check() {
     out=$(bootc upgrade --check 2>&1) && rc=0 || rc=$?
     if [ "$rc" -ne 0 ]; then
         save_state "$(date -Is) error $(printf '%s' "$out" | head -1)"
-        logger -t zen-ctl "check failed (rc=$rc): $out"
-        echo "zen-ctl: check failed (rc=$rc):" >&2
+        logger -t zctl "check failed (rc=$rc): $out"
+        echo "zctl: check failed (rc=$rc):" >&2
         printf '%s\n' "$out" >&2
         exit 2
     fi
     if [ -z "$out" ] || printf '%s' "$out" | grep -q '^No changes in:'; then
         save_state "$(date -Is) up-to-date"
-        logger -t zen-ctl "check: up to date"
-        echo "zen-ctl: up to date"
+        logger -t zctl "check: up to date"
+        echo "zctl: up to date"
         return 0
     fi
     if printf '%s' "$out" | grep -q '^Update available for:'; then
@@ -44,8 +44,8 @@ cmd_check() {
         added=$(printf '%s\n' "$out" | sed -n 's/^Added layers:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
         removed=$(printf '%s\n' "$out" | sed -n 's/^Removed layers:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
         save_state "$(date -Is) available ${digest:-?} ${ver:-?} ${size:-?}"
-        logger -t zen-ctl "check: update available ${ver:-} ${digest:-} ${size:-}"
-        echo "zen-ctl: update available ${ver:-(version unknown)} ${digest:-}"
+        logger -t zctl "check: update available ${ver:-} ${digest:-} ${size:-}"
+        echo "zctl: update available ${ver:-(version unknown)} ${digest:-}"
         if [ -n "${size:-}" ]; then
             echo "          size: ${size}${total:+ (image ${total})}"
         fi
@@ -54,12 +54,12 @@ cmd_check() {
         fi
         # wall = cron channel only; interactive runs already show the lines
         # above (wall would re-broadcast into the same pts = duplicate).
-        [ -t 0 ] || { echo "zen-ctl: update available ${size:+($size) }— run 'zen-ctl upgrade'" | wall 2>/dev/null || true; }
+        [ -t 0 ] || { echo "zctl: update available ${size:+($size) }— run 'zctl upgrade'" | wall 2>/dev/null || true; }
         return 1
     fi
     save_state "$(date -Is) unknown $(printf '%s' "$out" | head -1)"
-    logger -t zen-ctl "check: unexpected output: $out"
-    echo "zen-ctl: unexpected check output (see journal)" >&2
+    logger -t zctl "check: unexpected output: $out"
+    echo "zctl: unexpected check output (see journal)" >&2
     printf '%s\n' "$out" >&2
     exit 2
 }
@@ -113,19 +113,19 @@ cmd_status() {
 }
 
 cmd_remove_rollback() {
-    [ "$#" -eq 0 ] || { echo "usage: zen-ctl remove-rollback" >&2; return 2; }
+    [ "$#" -eq 0 ] || { echo "usage: zctl remove-rollback" >&2; return 2; }
     for_sub remove-rollback "$@"
 
     command -v ostree >/dev/null 2>&1 || {
-        echo "zen-ctl: ostree is required" >&2
+        echo "zctl: ostree is required" >&2
         return 1
     }
     command -v bootc >/dev/null 2>&1 || {
-        echo "zen-ctl: bootc is required" >&2
+        echo "zctl: bootc is required" >&2
         return 1
     }
     command -v jq >/dev/null 2>&1 || {
-        echo "zen-ctl: jq is required" >&2
+        echo "zctl: jq is required" >&2
         return 1
     }
 
@@ -134,34 +134,34 @@ cmd_remove_rollback() {
     local ans verify_ostree verify_bootc
 
     ostree_json=$(ostree admin status --json 2>&1) || {
-        echo "zen-ctl: could not read OSTree deployment status:" >&2
+        echo "zctl: could not read OSTree deployment status:" >&2
         printf '%s\n' "$ostree_json" >&2
         return 1
     }
     bootc_json=$(bootc status --json 2>&1) || {
-        echo "zen-ctl: could not read bootc status:" >&2
+        echo "zctl: could not read bootc status:" >&2
         printf '%s\n' "$bootc_json" >&2
         return 1
     }
 
     rollback_count=$(printf '%s' "$ostree_json" |
         jq '[.deployments[] | select(.rollback == true)] | length' 2>/dev/null) || {
-        echo "zen-ctl: could not parse OSTree deployment status JSON" >&2
+        echo "zctl: could not parse OSTree deployment status JSON" >&2
         return 1
     }
 
     if [ "$rollback_count" -eq 0 ]; then
-        echo "zen-ctl: no rollback deployment found"
+        echo "zctl: no rollback deployment found"
         return 0
     fi
     if [ "$rollback_count" -ne 1 ]; then
-        echo "zen-ctl: expected one rollback deployment, found $rollback_count; refusing to remove anything" >&2
+        echo "zctl: expected one rollback deployment, found $rollback_count; refusing to remove anything" >&2
         return 1
     fi
 
     rollback_json=$(printf '%s' "$ostree_json" |
         jq -c '[.deployments[] | select(.rollback == true)][0]' 2>/dev/null) || {
-        echo "zen-ctl: could not read rollback deployment details" >&2
+        echo "zctl: could not read rollback deployment details" >&2
         return 1
     }
 
@@ -169,12 +169,12 @@ cmd_remove_rollback() {
     checksum=$(printf '%s' "$rollback_json" | jq -r '.checksum // empty')
     case "$rollback_index" in
         ''|*[!0-9]*)
-            echo "zen-ctl: rollback deployment has an invalid index; refusing to remove anything" >&2
+            echo "zctl: rollback deployment has an invalid index; refusing to remove anything" >&2
             return 1
             ;;
     esac
     if [ -z "$checksum" ]; then
-        echo "zen-ctl: rollback deployment has no checksum; refusing to remove anything" >&2
+        echo "zctl: rollback deployment has no checksum; refusing to remove anything" >&2
         return 1
     fi
 
@@ -188,7 +188,7 @@ cmd_remove_rollback() {
         jq -r '.status.rollback.image.imageDigest // "unknown"' 2>/dev/null) || image_digest="unknown"
 
     if [ -n "$bootc_checksum" ] && [ "$bootc_checksum" != "$checksum" ]; then
-        echo "zen-ctl: bootc and OSTree disagree about which deployment is rollback; refusing to remove anything" >&2
+        echo "zctl: bootc and OSTree disagree about which deployment is rollback; refusing to remove anything" >&2
         echo "  bootc checksum:  $bootc_checksum" >&2
         echo "  OSTree checksum: $checksum" >&2
         return 1
@@ -207,14 +207,14 @@ cmd_remove_rollback() {
     read -r ans
     case "$ans" in
         [yY]|[yY][eE][sS]) ;;
-        *) echo "zen-ctl: canceled"; return 0 ;;
+        *) echo "zctl: canceled"; return 0 ;;
     esac
 
     # Re-read both sources before acting: deployment indexes can change.
     # Require the same OSTree checksum at the same index, still marked rollback
     # and not booted. If bootc has an OSTree checksum, require it to match too.
     ostree_json=$(ostree admin status --json 2>&1) || {
-        echo "zen-ctl: could not re-read OSTree deployment status:" >&2
+        echo "zctl: could not re-read OSTree deployment status:" >&2
         printf '%s\n' "$ostree_json" >&2
         return 1
     }
@@ -223,29 +223,29 @@ cmd_remove_rollback() {
             '.deployments[] | select(.index == $idx and .rollback == true and .booted != true and .checksum == $checksum)' \
             2>/dev/null) || verify_ostree=""
     if [ -z "$verify_ostree" ]; then
-        echo "zen-ctl: rollback deployment changed since confirmation; refusing to remove anything" >&2
+        echo "zctl: rollback deployment changed since confirmation; refusing to remove anything" >&2
         return 1
     fi
 
     bootc_json=$(bootc status --json 2>&1) || {
-        echo "zen-ctl: could not re-read bootc status:" >&2
+        echo "zctl: could not re-read bootc status:" >&2
         printf '%s\n' "$bootc_json" >&2
         return 1
     }
     verify_bootc=$(printf '%s' "$bootc_json" |
         jq -r '.status.rollback.ostree.checksum // empty' 2>/dev/null) || verify_bootc=""
     if [ -n "$verify_bootc" ] && [ "$verify_bootc" != "$checksum" ]; then
-        echo "zen-ctl: bootc rollback deployment changed since confirmation; refusing to remove anything" >&2
+        echo "zctl: bootc rollback deployment changed since confirmation; refusing to remove anything" >&2
         return 1
     fi
 
     if ! ostree admin undeploy "$rollback_index"; then
-        echo "zen-ctl: failed to remove rollback deployment at index $rollback_index" >&2
+        echo "zctl: failed to remove rollback deployment at index $rollback_index" >&2
         return 1
     fi
 
-    logger -t zen-ctl "removed rollback deployment index=$rollback_index checksum=$checksum"
-    echo "zen-ctl: rollback deployment removed"
+    logger -t zctl "removed rollback deployment index=$rollback_index checksum=$checksum"
+    echo "zctl: rollback deployment removed"
 }
 
 cmd_upgrade() {
@@ -253,7 +253,7 @@ cmd_upgrade() {
     if [ "${1:-}" = "--apply" ]; then
         exec bootc upgrade --apply
     elif [ "$#" -gt 0 ]; then
-        echo "usage: zen-ctl upgrade [--apply]" >&2
+        echo "usage: zctl upgrade [--apply]" >&2
         exit 2
     fi
     exec bootc upgrade
@@ -292,78 +292,78 @@ cmd_switch() {
         switch_show
         printf 'tag to switch ("q"=cancel): '
         read -r tag
-        case "${tag:-q}" in q|""|*[!a-zA-Z0-9._-]*) echo "zen-ctl: no tag selected"; return 0 ;; esac
+        case "${tag:-q}" in q|""|*[!a-zA-Z0-9._-]*) echo "zctl: no tag selected"; return 0 ;; esac
     fi
     case "$tag" in
         latest) ;;
         *)
-            tags_list | grep -qx "$tag" || { echo "zen-ctl: not a known latest tag: $tag" >&2; return 2; }
+            tags_list | grep -qx "$tag" || { echo "zctl: not a known latest tag: $tag" >&2; return 2; }
             ;;
     esac
     echo "== target probe: $REPO:$tag"
     out=$(bootc upgrade --tag "$tag" --check 2>&1) || {
         printf '%s\n' "$out" >&2
-        echo "zen-ctl: probe failed (registry/signature?) — not switching" >&2
+        echo "zctl: probe failed (registry/signature?) — not switching" >&2
         return 2
     }
     [ -n "$out" ] && printf '%s\n' "$out"
     printf 'switch to %s:%s? [y/N] ' "$REPO" "$tag"
     read -r ans
-    case "$ans" in [yY]*) ;; *) echo "zen-ctl: canceled"; return 0 ;; esac
+    case "$ans" in [yY]*) ;; *) echo "zctl: canceled"; return 0 ;; esac
     bootc switch --transport registry "$REPO:$tag" \
-        && { logger -t zen-ctl "switch: -> $tag"; echo "zen-ctl: staged $tag — reboot to enter it"; }
+        && { logger -t zctl "switch: -> $tag"; echo "zctl: staged $tag — reboot to enter it"; }
 }
 
-# --- zen-dev: user-local bootstrap; never elevates, never writes to /usr ---
-# Trust class matches `zen-dev update`: raw main over TLS, syntax/header
+# --- zdev: user-local bootstrap; never elevates, never writes to /usr ---
+# Trust class matches `zdev update`: raw main over TLS, syntax/header
 # checked, deliberately unsigned. The tool lives in $HOME and self-updates.
 cmd_zen_dev() {
-    [ "$#" -eq 0 ] || { echo "usage: zen-ctl zen-dev" >&2; return 2; }
+    [ "$#" -eq 0 ] || { echo "usage: zctl zdev" >&2; return 2; }
     if [ "$(id -u)" -eq 0 ] || [ -n "${SUDO_USER:-}" ]; then
-        echo "zen-ctl: zen-dev installs into the invoking user's HOME; run 'zen-ctl zen-dev' without sudo/root" >&2
+        echo "zctl: zdev installs into the invoking user's HOME; run 'zctl zdev' without sudo/root" >&2
         return 2
     fi
-    command -v curl >/dev/null 2>&1 || { echo "zen-ctl: curl is required for zen-dev bootstrap" >&2; return 1; }
+    command -v curl >/dev/null 2>&1 || { echo "zctl: curl is required for zdev bootstrap" >&2; return 1; }
 
     local target tmp
-    target="$HOME/.local/bin/zen-dev"
-    mkdir -p "$(dirname "$target")" || { echo "zen-ctl: cannot create $(dirname "$target")" >&2; return 1; }
+    target="$HOME/.local/bin/zdev"
+    mkdir -p "$(dirname "$target")" || { echo "zctl: cannot create $(dirname "$target")" >&2; return 1; }
 
-    tmp=$(mktemp "$(dirname "$target")/.zen-dev.XXXXXX") || {
-        echo "zen-ctl: mktemp failed" >&2
+    tmp=$(mktemp "$(dirname "$target")/.zdev.XXXXXX") || {
+        echo "zctl: mktemp failed" >&2
         return 1
     }
 
     if ! curl --proto '=https' --proto-redir '=https' -fsSL "$ZEN_DEV_RAW" -o "$tmp"; then
         rm -f "$tmp"
-        echo "zen-ctl: zen-dev fetch failed" >&2
+        echo "zctl: zdev fetch failed" >&2
         return 1
     fi
-    if ! bash -n "$tmp" 2>/dev/null || ! grep -q '^# zen-dev' "$tmp"; then
+    if ! bash -n "$tmp" 2>/dev/null || ! grep -q '^# zdev' "$tmp"; then
         rm -f "$tmp"
-        echo "zen-ctl: fetched zen-dev failed sanity checks — nothing installed" >&2
+        echo "zctl: fetched zdev failed sanity checks — nothing installed" >&2
         return 1
     fi
 
     if ! chmod 0755 "$tmp"; then
         rm -f "$tmp"
-        echo "zen-ctl: could not set installation permissions" >&2
+        echo "zctl: could not set installation permissions" >&2
         return 1
     fi
 
     if ! mv -f -- "$tmp" "$target"; then
         rm -f "$tmp"
-        echo "zen-ctl: could not install $target" >&2
+        echo "zctl: could not install $target" >&2
         return 1
     fi
 
     case ":$PATH:" in
         *":$HOME/.local/bin:"*) ;;
-        *) echo "zen-dev: note: $HOME/.local/bin is not in PATH" >&2 ;;
+        *) echo "zdev: note: $HOME/.local/bin is not in PATH" >&2 ;;
     esac
-    echo "zen-dev installed at $target"
-    echo "  zen-dev            list tools + install state"
-    echo "  zen-dev update     self-update from the repo"
+    echo "zdev installed at $target"
+    echo "  zdev            list tools + install state"
+    echo "  zdev update     self-update from the repo"
 }
 
 case "${1:-}" in
@@ -372,9 +372,9 @@ case "${1:-}" in
     remove-rollback) shift; cmd_remove_rollback "$@" ;;
     upgrade)         shift; cmd_upgrade "$@" ;;
     switch)          shift; cmd_switch "$@" ;;
-    zen-dev)         shift; cmd_zen_dev "$@" ;;
+    zdev)         shift; cmd_zen_dev "$@" ;;
     help|-h|--help|"")
-        echo "usage: zen-ctl check | status | remove-rollback | upgrade [--apply] | switch [--list|<tag>] | zen-dev"
+        echo "usage: zctl check | status | remove-rollback | upgrade [--apply] | switch [--list|<tag>] | zdev"
         echo "  check           probe upstream; shows download size; rc1 = update available"
         echo "  status          running/staged/rollback image details + live remote check"
         echo "  remove-rollback remove the non-booted rollback deployment permanently"
@@ -382,9 +382,9 @@ case "${1:-}" in
         echo "  switch          roll to :latest or a dated latest-YYYYMMDD-sha7 anchor"
         echo "                  (browse tags, probe target, explicit confirm; --list is"
         echo "                  read-only, no elevation)"
-        echo "  zen-dev         install/refresh user-local zen-dev into ~/.local/bin"
+        echo "  zdev         install/refresh user-local zdev into ~/.local/bin"
         echo "                  (raw main, sanity-checked; never uses sudo or touches /usr)"
         echo "Sudo is prompted automatically for system commands; cron runs check as"
-        echo "root weekly (Sat 22:00). zen-dev is unsigned user tooling by design." ;;
-    *) echo "zen-ctl: unknown subcommand '$1'" >&2; exit 2 ;;
+        echo "root weekly (Sat 22:00). zdev is unsigned user tooling by design." ;;
+    *) echo "zctl: unknown subcommand '$1'" >&2; exit 2 ;;
 esac

@@ -53,45 +53,45 @@ Installer ISO: Actions → "Publish ISO" (one role, no checkboxes), or
 ## Updates
 
 ```bash
-zen-ctl check            # probe digest + download size; also via /etc/cron.d/zen-ctl (Sat 22:00)
-zen-ctl status           # tracking tag + running/staged digest + remote check
-zen-ctl upgrade          # stage an update (manual only)
-zen-ctl upgrade --apply
-zen-ctl switch           # browse :latest and dated anchors, probe, confirm → bootc switch
-zen-ctl switch --list    # read-only listing, no elevation
-zen-ctl remove-rollback  # remove the non-booted rollback deployment
-zen-ctl zen-dev          # install/refresh user-local zen-dev (no sudo)
+zctl check            # probe digest + download size; also via /etc/cron.d/zctl (Sat 22:00)
+zctl status           # tracking tag + running/staged digest + remote check
+zctl upgrade          # stage an update (manual only)
+zctl upgrade --apply
+zctl switch           # browse :latest and dated anchors, probe, confirm → bootc switch
+zctl switch --list    # read-only listing, no elevation
+zctl remove-rollback  # remove the non-booted rollback deployment
+zctl zdev          # install/refresh user-local zdev (no sudo)
 ```
 
-Sudo is prompted for system commands except `zen-ctl zen-dev` and `switch --list`;
+Sudo is prompted for system commands except `zctl zdev` and `switch --list`;
 detection is cron-automated; applying is manual.
 
 CA trust and crypto-policy backends are regenerated at boot after upgrades, so
 preserved `/etc` state doesn't go stale.
 
-## zen-dev (user-local tooling)
+## zdev (user-local tooling)
 
-`zen-dev` installs optional dev tooling into `$HOME` via each tool's official
+`zdev` installs optional dev tooling into `$HOME` via each tool's official
 upstream installer — never baked into the image, never touches `/usr`.
-Run `zen-ctl zen-dev` on any install (no sudo; refuses sudo/root, writes only
+Run `zctl zdev` on any install (no sudo; refuses sudo/root, writes only
 to `$HOME`).
 Fallback one-liner:
 
 ```bash
-zen-ctl zen-dev
+zctl zdev
 # fallback:
-curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zdev-install.sh | bash
 ```
 
 ```bash
-zen-dev            # list tools + install state
-zen-dev brew       # Homebrew (official installer)
-zen-dev idea       # IntelliJ IDEA CE (latest GitHub release)
-zen-dev sdkman     # SDKMAN!
-zen-dev nvm        # nvm (latest GitHub release)
-zen-dev uv         # uv (official astral installer)
-zen-dev rust       # rust (official rustup installer)
-zen-dev update     # self-update zen-dev from this repo
+zdev            # list tools + install state
+zdev brew       # Homebrew (official installer)
+zdev idea       # IntelliJ IDEA CE (latest GitHub release)
+zdev sdkman     # SDKMAN!
+zdev nvm        # nvm (latest GitHub release)
+zdev uv         # uv (official astral installer)
+zdev rust       # rust (official rustup installer)
+zdev update     # self-update zdev from this repo
 ```
 
 Versions resolve live from upstream at install time — nothing pinned.
@@ -107,9 +107,9 @@ policy.json                        signed-ref policy shipped into the image
 cosign.pub                         public key for signature enforcement
 registries.d/                      registries.d snippet shipped into the image
 disk_config/iso-kde.toml           bootc-image-builder config for the ISO
-files/                             shipped files (zen-ctl, cron, branding, drop-ins)
-zen-dev                            user-local dev tooling helper (fetched from raw main)
-zen-dev-install.sh                 fallback installer one-liner for zen-dev
+files/                             shipped files (zctl, cron, branding, drop-ins)
+zdev                            user-local dev tooling helper (fetched from raw main)
+zdev-install.sh                 fallback installer one-liner for zdev
 docs/iso.md                        ISO build + SourceForge guide
 files/usr/lib/bootc/kargs.d/10-plymouth.toml  boot kernel args
 legacy/nix/                        dormant Nix-era leftovers; image has NO Nix
@@ -125,5 +125,5 @@ backup branch                      frozen generic multi-variant setup (reference
 2. CI builds, rechunks, smoke-checks, signs the staged digest, then publishes
    `:latest`; install or `bootc upgrade` on the machine to test.
 3. Pin a dated `latest-YYYYMMDD-sha7` anchor if you want to hold a known-good
-   build; `zen-ctl switch` moves between anchors.
+   build; `zctl switch` moves between anchors.
 4. For an installer, dispatch "Publish ISO" manually.

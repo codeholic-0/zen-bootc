@@ -4,8 +4,8 @@
 # Kickstart minimal on purpose: everything except the contract lines is set
 # interactively in Anaconda (image stays locale-neutral).
 # The %post pins the installed system to :latest regardless of the tag used
-# to build the ISO. Flathub is baked into the image; zen-dev is user-local
-# via `zen-ctl zen-dev`.
+# to build the ISO. Flathub is baked into the image; zdev is user-local
+# via `zctl zdev`.
 
 [customizations.installer.kickstart]
 contents = """

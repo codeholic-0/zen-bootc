@@ -38,11 +38,11 @@ check "os-release VERSION_ID ${VER}" grep -q "^VERSION_ID=${VER}$" /etc/os-relea
 check "PRETTY_NAME ZenC OS ${VER}"   grep -qx "PRETTY_NAME=\"ZenC OS ${VER} (KDE Plasma Desktop)\"" /usr/lib/os-release
 check "copr vendor override" grep -q '^distribution = fedora$' /usr/share/dnf/plugins/copr.vendor.conf
 
-check "zen-ctl syntax"               bash -n /usr/bin/zen-ctl
-check "zen-ctl executable"           test -x /usr/bin/zen-ctl
-check "zen-ctl help"                 zen-ctl help
-check "zen-ctl cron"                 test -f /etc/cron.d/zen-ctl
-check "zen-ctl cron wiring"          grep -q 'root /usr/bin/zen-ctl check' /etc/cron.d/zen-ctl
+check "zctl syntax"               bash -n /usr/bin/zctl
+check "zctl executable"           test -x /usr/bin/zctl
+check "zctl help"                 zctl help
+check "zctl cron"                 test -f /etc/cron.d/zctl
+check "zctl cron wiring"          grep -q 'root /usr/bin/zctl check' /etc/cron.d/zctl
 
 check "bootc on PATH"                command -v bootc
 check "jq on PATH"                   command -v jq

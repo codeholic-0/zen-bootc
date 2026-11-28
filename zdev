@@ -1,12 +1,12 @@
 #!/bin/bash
-# zen-dev — user-local dev tooling (installed to ~/.local/bin, NOT baked
-# into the image; self-updates via 'zen-dev update' from this repo's raw
+# zdev — user-local dev tooling (installed to ~/.local/bin, NOT baked
+# into the image; self-updates via 'zdev update' from this repo's raw
 # main). Installs user-scoped tooling into $HOME via each tool's upstream
 # installer; never writes to /usr — image consistency is untouchable.
 # rc edits are idempotent and only made for bash/zsh login shells.
 set -u
 
-ZEN_DEV_RAW="https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zen-dev"
+ZEN_DEV_RAW="https://raw.githubusercontent.com/codeholic-0/zen-bootc/main/zdev"
 
 NVM_API="https://api.github.com/repos/nvm-sh/nvm/releases/latest"
 # NOTE: releases/latest is wrong here — JetBrains ships pycharm/etc. from the
@@ -47,53 +47,53 @@ cmd_list() {
     local shell rc t
     has_cc || cc_note   # passive upfront inform; installs prompt for themselves
     shell=$(login_shell)
-    echo "zen-dev: login shell: $shell"
+    echo "zdev: login shell: $shell"
     for t in brew idea sdkman nvm uv rust; do
         if installed "$t"; then st="installed"; else st="-"; fi
         printf '  %-8s %s\n' "$t" "$st"
     done
-    echo "usage: zen-dev [brew|idea|sdkman|nvm|uv|rust|update|list]"
+    echo "usage: zdev [brew|idea|sdkman|nvm|uv|rust|update|list]"
 }
 
 cmd_update() {
-    # Fetch latest zen-dev from raw main, sanity-check, atomically replace.
-    local tmp target="$HOME/.local/bin/zen-dev"
-    echo "zen-dev: checking for updates..."
+    # Fetch latest zdev from raw main, sanity-check, atomically replace.
+    local tmp target="$HOME/.local/bin/zdev"
+    echo "zdev: checking for updates..."
     tmp=$(mktemp) || return 1
-    curl -fsSL "$ZEN_DEV_RAW" -o "$tmp" || { rm -f "$tmp"; echo "zen-dev: fetch failed" >&2; return 1; }
-    if ! bash -n "$tmp" 2>/dev/null || ! grep -q '^# zen-dev' "$tmp"; then
-        echo "zen-dev: fetched content failed sanity checks — not installed" >&2
+    curl -fsSL "$ZEN_DEV_RAW" -o "$tmp" || { rm -f "$tmp"; echo "zdev: fetch failed" >&2; return 1; }
+    if ! bash -n "$tmp" 2>/dev/null || ! grep -q '^# zdev' "$tmp"; then
+        echo "zdev: fetched content failed sanity checks — not installed" >&2
         rm -f "$tmp"; return 1
     fi
     if cmp -s "$tmp" "$target" 2>/dev/null; then
-        echo "zen-dev: up to date"; rm -f "$tmp"; return 0
+        echo "zdev: up to date"; rm -f "$tmp"; return 0
     fi
     mkdir -p "$(dirname "$target")"
     mv "$tmp" "$target" && chmod 0755 "$target"
-    echo "zen-dev: updated ($target — applies on next run)"
+    echo "zdev: updated ($target — applies on next run)"
 }
 
 cmd_brew() {
     local rc line
-    if installed brew; then echo "zen-dev: brew already installed"; return 0; fi
+    if installed brew; then echo "zdev: brew already installed"; return 0; fi
     # Shell-agnostic installer; only bash/zsh get the automatic rc edit.
     rc=$(rc_for "$(login_shell)") \
-        || echo "zen-dev: unsupported shell — wire brew shellenv manually" >&2
+        || echo "zdev: unsupported shell — wire brew shellenv manually" >&2
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || return 1
     if [ -n "${rc:-}" ]; then
         line='eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
         rc_append "$rc" "$line"
-        grep -qF -- "$line" "$rc" && echo "zen-dev: shellenv added to $rc (open a new shell)"
+        grep -qF -- "$line" "$rc" && echo "zdev: shellenv added to $rc (open a new shell)"
     fi
 }
 
 cmd_idea() {
-    if installed idea; then echo "zen-dev: idea already installed"; return 0; fi
+    if installed idea; then echo "zdev: idea already installed"; return 0; fi
     local tarball d resp tag ver name url
-    echo "zen-dev: resolving latest IDEA CE release..."
+    echo "zdev: resolving latest IDEA CE release..."
     resp=$(curl -fsSL "$IDEA_API") || return 1
     tag=$(jq -r '[.[] | select(.tag_name | startswith("idea/"))][0].tag_name' <<<"$resp")
-    case "$tag" in idea/*) ver=${tag#idea/} ;; *) echo "zen-dev: no idea/ release found" >&2; return 1 ;; esac
+    case "$tag" in idea/*) ver=${tag#idea/} ;; *) echo "zdev: no idea/ release found" >&2; return 1 ;; esac
     case "$(uname -m)" in
         aarch64) name="idea-${ver}-aarch64.tar.gz" ;;
         *)       name="idea-${ver}.tar.gz" ;;
@@ -101,8 +101,8 @@ cmd_idea() {
     url=$(jq -r --arg n "$name" \
         '[.[] | select(.tag_name | startswith("idea/"))][0].assets[] | select(.name == $n) | .browser_download_url' \
         <<<"$resp")
-    [ -n "$url" ] || { echo "zen-dev: asset $name not found in $tag" >&2; return 1; }
-    echo "zen-dev: downloading $name (large)..."
+    [ -n "$url" ] || { echo "zdev: asset $name not found in $tag" >&2; return 1; }
+    echo "zdev: downloading $name (large)..."
     # Download+extract in the install dir, not /tmp — tmpfs may be too small
     # for the tarball + unpacked tree; the tarball is removed after unpack.
     local opt="$HOME/.local/opt"
@@ -111,7 +111,7 @@ cmd_idea() {
     curl -fSL "$url" -o "$tarball" || { rm -f "$tarball"; return 1; }
     tar -xzf "$tarball" -C "$opt" || { rm -f "$tarball"; return 1; }
     d=$(tar -tzf "$tarball" | head -1 | cut -d/ -f1)
-    [ -n "$d" ] || { echo "zen-dev: unexpected archive layout" >&2; rm -f "$tarball"; return 1; }
+    [ -n "$d" ] || { echo "zdev: unexpected archive layout" >&2; rm -f "$tarball"; return 1; }
     rm -rf "$IDEA_DIR"   # stale partial from a failed prior run
     mv "$opt/$d" "$IDEA_DIR"
     rm -f "$tarball"
@@ -132,7 +132,7 @@ Terminal=false
 Categories=Development;IDE;
 Keywords=idea;intellij;ide;
 EOF
-    [ -x "$IDEA_BIN" ] && echo "zen-dev: idea installed ($IDEA_DIR)"
+    [ -x "$IDEA_BIN" ] && echo "zdev: idea installed ($IDEA_DIR)"
 }
 
 # rust/uv source builds invoke the system C linker — that lives in the
@@ -143,70 +143,70 @@ has_cc() {
 }
 
 cc_note() {
-    echo "zen-dev: no C linker (cc/gcc) found — source builds will fail." >&2
-    echo "  on zen-bootc: dev flavor ships gcc (zen-ctl switch), or use a distrobox" >&2
+    echo "zdev: no C linker (cc/gcc) found — source builds will fail." >&2
+    echo "  on zen-bootc: dev flavor ships gcc (zctl switch), or use a distrobox" >&2
 }
 
 cmd_uv() {
     # astral's official installer — shell-agnostic, no rc edit needed
     # (installs to ~/.local/bin, which is on PATH by default).
-    if installed uv; then echo "zen-dev: uv already installed"; return 0; fi
+    if installed uv; then echo "zdev: uv already installed"; return 0; fi
     if ! has_cc; then
         cc_note   # source-built sdist installs need a system linker
-        read -r -p "zen-dev: install anyway? [y/N] " a
-        case "$a" in y*|Y*) ;; *) echo "zen-dev: aborted" >&2; return 1 ;; esac
+        read -r -p "zdev: install anyway? [y/N] " a
+        case "$a" in y*|Y*) ;; *) echo "zdev: aborted" >&2; return 1 ;; esac
     fi
-    echo "zen-dev: installing uv (official astral installer)..."
+    echo "zdev: installing uv (official astral installer)..."
     curl -LsSf https://astral.sh/uv/install.sh | sh || return 1
     [ -x "$HOME/.local/bin/uv" ] \
-        && echo "zen-dev: uv installed (~/.local/bin/uv)" \
-        || { echo "zen-dev: uv installer finished but binary missing from ~/.local/bin" >&2; return 1; }
+        && echo "zdev: uv installed (~/.local/bin/uv)" \
+        || { echo "zdev: uv installer finished but binary missing from ~/.local/bin" >&2; return 1; }
 }
 
 cmd_rust() {
     # rustup official installer — shell-agnostic (installs ~/.cargo + ~/.rustup;
     # installer appends the env line to your rc itself).
-    if installed rust; then echo "zen-dev: rust already installed"; return 0; fi
+    if installed rust; then echo "zdev: rust already installed"; return 0; fi
     if ! has_cc; then
         cc_note   # cargo invokes the system cc linker at build time
-        read -r -p "zen-dev: install anyway? [y/N] " a
-        case "$a" in y*|Y*) ;; *) echo "zen-dev: aborted" >&2; return 1 ;; esac
+        read -r -p "zdev: install anyway? [y/N] " a
+        case "$a" in y*|Y*) ;; *) echo "zdev: aborted" >&2; return 1 ;; esac
     fi
-    echo "zen-dev: installing rust (official rustup installer)..."
+    echo "zdev: installing rust (official rustup installer)..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y || return 1
     [ -x "$HOME/.cargo/bin/cargo" ] \
-        && echo "zen-dev: rust installed (cargo in ~/.cargo/bin — open a new shell)" \
-        || { echo "zen-dev: rustup finished but cargo missing from ~/.cargo/bin" >&2; return 1; }
+        && echo "zdev: rust installed (cargo in ~/.cargo/bin — open a new shell)" \
+        || { echo "zdev: rustup finished but cargo missing from ~/.cargo/bin" >&2; return 1; }
 }
 
 cmd_sdkman() {
     local rc
-    if installed sdkman; then echo "zen-dev: sdkman already installed"; return 0; fi
+    if installed sdkman; then echo "zdev: sdkman already installed"; return 0; fi
     rc=$(rc_for "$(login_shell)") || {
-        echo "zen-dev: unsupported shell '$(login_shell)' — sdkman targets bash/zsh, install manually" >&2
+        echo "zdev: unsupported shell '$(login_shell)' — sdkman targets bash/zsh, install manually" >&2
         return 2
     }
     curl -s "https://get.sdkman.io" | bash || return 1
     grep -q "sdkman-init.sh" "$rc" \
-        && echo "zen-dev: sdkman installed (init line in $rc — open a new shell)" \
-        || { echo "zen-dev: sdkman installed but init line missing from $rc" >&2; return 1; }
+        && echo "zdev: sdkman installed (init line in $rc — open a new shell)" \
+        || { echo "zdev: sdkman installed but init line missing from $rc" >&2; return 1; }
 }
 
 cmd_nvm() {
     local rc ver
-    if installed nvm; then echo "zen-dev: nvm already installed"; return 0; fi
+    if installed nvm; then echo "zdev: nvm already installed"; return 0; fi
     rc=$(rc_for "$(login_shell)") || {
-        echo "zen-dev: unsupported shell '$(login_shell)' — nvm targets bash/zsh, install manually" >&2
+        echo "zdev: unsupported shell '$(login_shell)' — nvm targets bash/zsh, install manually" >&2
         return 2
     }
-    echo "zen-dev: resolving latest nvm release..."
+    echo "zdev: resolving latest nvm release..."
     ver=$(curl -fsSL "$NVM_API" | jq -r '.tag_name')
-    [ -n "$ver" ] && [ "$ver" != "null" ] || { echo "zen-dev: could not resolve nvm version" >&2; return 1; }
-    echo "zen-dev: installing nvm $ver..."
+    [ -n "$ver" ] && [ "$ver" != "null" ] || { echo "zdev: could not resolve nvm version" >&2; return 1; }
+    echo "zdev: installing nvm $ver..."
     curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/$ver/install.sh" | bash || return 1
     grep -q "NVM_DIR" "$rc" \
-        && echo "zen-dev: nvm $ver installed (init line in $rc — open a new shell)" \
-        || { echo "zen-dev: nvm installed but init line missing from $rc" >&2; return 1; }
+        && echo "zdev: nvm $ver installed (init line in $rc — open a new shell)" \
+        || { echo "zdev: nvm installed but init line missing from $rc" >&2; return 1; }
 }
 
 case "${1:-list}" in
@@ -219,5 +219,5 @@ case "${1:-list}" in
     rust)      shift; cmd_rust "$@" ;;
     update)    shift; cmd_update "$@" ;;
     help|-h|--help) cmd_list ;;
-    *) echo "zen-dev: unknown command '$1'" >&2; cmd_list; exit 2 ;;
+    *) echo "zdev: unknown command '$1'" >&2; cmd_list; exit 2 ;;
 esac

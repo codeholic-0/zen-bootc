@@ -102,7 +102,7 @@ jobs:
 
       - name: Smoke-check image
         # Runs the final chunked image (the artifact that gets pushed+signed)
-        # and asserts branding, zen-ctl wiring, signature policy and toolchain
+        # and asserts branding, zctl wiring, signature policy and toolchain
         # invariants. Checks live in .github/scripts/smoke.sh and are fed on
         # stdin so they are not baked into the image.
         run: |

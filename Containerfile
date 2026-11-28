@@ -65,10 +65,10 @@ COPY files/usr/lib/systemd/system/systemd-remount-fs.service.d/10-composefs-skip
 # sysusers: declare docker group (docker-ce creates it via scriptlet) 
 COPY files/usr/lib/sysusers.d/zen-bootc.conf /usr/lib/sysusers.d/zen-bootc.conf
 
-# zen-ctl: upgrade check/status/apply CLI + weekly cron
-COPY files/usr/bin/zen-ctl /usr/bin/zen-ctl
-COPY files/etc/cron.d/zen-ctl /etc/cron.d/zen-ctl
-RUN chmod 0755 /usr/bin/zen-ctl && chmod 0644 /etc/cron.d/zen-ctl
+# zctl: upgrade check/status/apply CLI + weekly cron
+COPY files/usr/bin/zctl /usr/bin/zctl
+COPY files/etc/cron.d/zctl /etc/cron.d/zctl
+RUN chmod 0755 /usr/bin/zctl && chmod 0644 /etc/cron.d/zctl
 
 # Clean Up
 RUN --mount=type=bind,from=build_ctx,source=/,target=/ctx \

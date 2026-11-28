@@ -52,4 +52,4 @@ required), so build from `:latest` unless you deliberately want otherwise.
 Boot → interactive Anaconda (locale, keyboard, timezone, partitioning, user).
 `%post`: `bootc switch` to `ghcr.io/codeholic-0/zen-bootc:latest` (network
 required). Flathub is baked into the image; optional user-local tooling is
-installed with `zen-ctl zen-dev`.
+installed with `zctl zdev`.
